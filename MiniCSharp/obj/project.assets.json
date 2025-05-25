@@ -2,14 +2,7 @@
   "version": 3,
   "targets": {
     "net9.0": {
-      "Antlr4.CodeGenerator/4.6.6": {
-        "type": "package",
-        "build": {
-          "build/Antlr4.CodeGenerator.props": {},
-          "build/Antlr4.CodeGenerator.targets": {}
-        }
-      },
-      "Antlr4.Runtime.Standard/4.9.3": {
+      "Antlr4.Runtime.Standard/4.13.1": {
         "type": "package",
         "compile": {
           "lib/netstandard2.0/Antlr4.Runtime.Standard.dll": {
@@ -25,69 +18,14 @@
     }
   },
   "libraries": {
-    "Antlr4.CodeGenerator/4.6.6": {
-      "sha512": "AStoC8SCdU1TUSn5Bh0xZU9rlvaERwXkrgqc1jEFON3e/xBtapCuThYIzgXL9TOignWwHjLxlHH233D+DfH9LA==",
+    "Antlr4.Runtime.Standard/4.13.1": {
+      "sha512": "Da5+i4kFHUseJRZGcBG5fmZGpA/Ns180ibrQMxgZzjpQOnENVvSL5gi5HZ8Ncz8/AR2WsKbOg2lMBzjz0HUQcA==",
       "type": "package",
-      "path": "antlr4.codegenerator/4.6.6",
-      "hasTools": true,
+      "path": "antlr4.runtime.standard/4.13.1",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "antlr4.codegenerator.4.6.6.nupkg.sha512",
-        "antlr4.codegenerator.nuspec",
-        "build/Antlr4.CodeGenerator.DefaultItems.props",
-        "build/Antlr4.CodeGenerator.DefaultItems.targets",
-        "build/Antlr4.CodeGenerator.props",
-        "build/Antlr4.CodeGenerator.targets",
-        "build/Rules/Antlr4.ProjectItemsSchema.xml",
-        "build/Rules/Antlr4.xml",
-        "tools/antlr4-csharp-4.6.6-complete.jar",
-        "tools/net40/Antlr4BuildTasks.dll",
-        "tools/net45/Antlr3.Runtime.dll",
-        "tools/net45/Antlr4.Runtime.dll",
-        "tools/net45/Antlr4.StringTemplate.dll",
-        "tools/net45/Antlr4.exe",
-        "tools/net45/Tool/Templates/Codegen/CSharp/CSharp.stg",
-        "tools/net45/Tool/Templates/Codegen/CSharp/CSharp_v2_0.stg",
-        "tools/net45/Tool/Templates/Codegen/CSharp/CSharp_v3_0.stg",
-        "tools/net45/Tool/Templates/Codegen/CSharp/CSharp_v3_5.stg",
-        "tools/net45/Tool/Templates/Codegen/CSharp/CSharp_v4_0.stg",
-        "tools/net45/Tool/Templates/Codegen/CSharp/CSharp_v4_5.stg",
-        "tools/net45/Tool/Templates/Codegen/Java/Java.stg",
-        "tools/net45/Tool/Templates/Dot/graphs.stg",
-        "tools/net45/Tool/Templates/LeftRecursiveRules.stg",
-        "tools/net45/Tool/Templates/Messages/Formats/antlr.stg",
-        "tools/net45/Tool/Templates/Messages/Formats/gnu.stg",
-        "tools/net45/Tool/Templates/Messages/Formats/vs2005.stg",
-        "tools/net45/Tool/Templates/depend.stg",
-        "tools/netstandard/Antlr3.Runtime.dll",
-        "tools/netstandard/Antlr4.Runtime.dll",
-        "tools/netstandard/Antlr4.StringTemplate.dll",
-        "tools/netstandard/Antlr4.dll",
-        "tools/netstandard/Antlr4BuildTasks.dll",
-        "tools/netstandard/Tool/Templates/Codegen/CSharp/CSharp.stg",
-        "tools/netstandard/Tool/Templates/Codegen/CSharp/CSharp_v2_0.stg",
-        "tools/netstandard/Tool/Templates/Codegen/CSharp/CSharp_v3_0.stg",
-        "tools/netstandard/Tool/Templates/Codegen/CSharp/CSharp_v3_5.stg",
-        "tools/netstandard/Tool/Templates/Codegen/CSharp/CSharp_v4_0.stg",
-        "tools/netstandard/Tool/Templates/Codegen/CSharp/CSharp_v4_5.stg",
-        "tools/netstandard/Tool/Templates/Codegen/Java/Java.stg",
-        "tools/netstandard/Tool/Templates/Dot/graphs.stg",
-        "tools/netstandard/Tool/Templates/LeftRecursiveRules.stg",
-        "tools/netstandard/Tool/Templates/Messages/Formats/antlr.stg",
-        "tools/netstandard/Tool/Templates/Messages/Formats/gnu.stg",
-        "tools/netstandard/Tool/Templates/Messages/Formats/vs2005.stg",
-        "tools/netstandard/Tool/Templates/depend.stg"
-      ]
-    },
-    "Antlr4.Runtime.Standard/4.9.3": {
-      "sha512": "wn+a34a9r3jOMxnIWxWJQ7QAbKi+KyZ9YAiEVVw0qII0J4Z6Z9F6a1b8WNzU00LlsIt++nZIz1BokksielrQYA==",
-      "type": "package",
-      "path": "antlr4.runtime.standard/4.9.3",
-      "files": [
-        ".nupkg.metadata",
-        ".signature.p7s",
-        "antlr4.runtime.standard.4.9.3.nupkg.sha512",
+        "antlr4.runtime.standard.4.13.1.nupkg.sha512",
         "antlr4.runtime.standard.nuspec",
         "lib/net45/Antlr4.Runtime.Standard.dll",
         "lib/net45/Antlr4.Runtime.Standard.xml",
@@ -98,24 +36,23 @@
   },
   "projectFileDependencyGroups": {
     "net9.0": [
-      "Antlr4.CodeGenerator >= 4.6.6",
-      "Antlr4.Runtime.Standard >= 4.9.3"
+      "Antlr4.Runtime.Standard >= 4.13.1"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\casam\\.nuget\\packages\\": {}
+    "C:\\Users\\Lizsa\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
+      "projectUniqueName": "C:\\Users\\Lizsa\\RiderProjects\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
       "projectName": "MiniCSharp",
-      "projectPath": "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
-      "packagesPath": "C:\\Users\\casam\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\obj\\",
+      "projectPath": "C:\\Users\\Lizsa\\RiderProjects\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
+      "packagesPath": "C:\\Users\\Lizsa\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Lizsa\\RiderProjects\\MiniCSharp\\MiniCSharp\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\casam\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\Lizsa\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -137,23 +74,17 @@
       "restoreAuditProperties": {
         "enableAudit": "true",
         "auditLevel": "low",
-        "auditMode": "all"
+        "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.100"
+      "SdkAnalysisLevel": "9.0.200"
     },
     "frameworks": {
       "net9.0": {
         "targetAlias": "net9.0",
         "dependencies": {
-          "Antlr4.CodeGenerator": {
-            "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
-            "suppressParent": "All",
-            "target": "Package",
-            "version": "[4.6.6, )"
-          },
           "Antlr4.Runtime.Standard": {
             "target": "Package",
-            "version": "[4.9.3, )"
+            "version": "[4.13.1, )"
           }
         },
         "imports": [
@@ -172,7 +103,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\casam\\.dotnet\\sdk\\9.0.100/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Users\\Lizsa\\.dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

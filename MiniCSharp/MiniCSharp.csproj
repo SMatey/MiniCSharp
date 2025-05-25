@@ -1,27 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Antlr4.CodeGenerator" Version="4.6.6">
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        <PrivateAssets>all</PrivateAssets>
-      </PackageReference>
-      <PackageReference Include="Antlr4.Runtime.Standard" Version="4.9.3" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <Content Include="Grammar\MiniCSharpLexer.g4" />
-      <Content Include="Grammar\MiniCSharpParser.g4" />
-    </ItemGroup>
+  <ItemGroup>
+    <Content Include="Grammar\MiniCSharpLexer.g4" />
+    <Content Include="Grammar\MiniCSharpParser.g4" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Grammar\gen\" />
-    </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Grammar\parser\generated\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Grammar\parser\generated\" />
+  </ItemGroup>
 
 </Project>

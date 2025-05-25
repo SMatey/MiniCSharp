@@ -2,13 +2,13 @@
 using System.IO;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
-using MiniCSharp.Gramma;
+
 
 class Program
 {
     static void Main(string[] args)
     {
-        var filePath = "test.mcs"; // o Samples/test.mcs si lo pusiste en carpeta
+        var filePath = "C:\\Users\\Lizsa\\RiderProjects\\MiniCSharp\\MiniCSharp\\test.txt"; 
 
         if (!File.Exists(filePath))
         {
