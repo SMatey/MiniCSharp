@@ -1,0 +1,6 @@
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpLexer.cs
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParser.cs
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserListener.cs
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserBaseListener.cs
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserVisitor.cs
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserBaseVisitor.cs

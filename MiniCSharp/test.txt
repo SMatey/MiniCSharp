@@ -1,0 +1,8 @@
+class P {
+    void Main() {
+        int x, y;
+        x = 5;
+        y = x + 3;
+        write(x);
+    }
+}
