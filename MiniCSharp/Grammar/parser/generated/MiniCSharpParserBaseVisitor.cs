@@ -36,7 +36,8 @@ using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 [System.CLSCompliant(false)]
 public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisitor<Result>, IMiniCSharpParserVisitor<Result> {
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.program"/>.
+	/// Visit a parse tree produced by the <c>Prog</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.program"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -44,9 +45,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitProgram([NotNull] MiniCSharpParser.ProgramContext context) { return VisitChildren(context); }
+	public virtual Result VisitProg([NotNull] MiniCSharpParser.ProgContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.usingDirective"/>.
+	/// Visit a parse tree produced by the <c>UsingStat</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.usingDirective"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -54,9 +56,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitUsingDirective([NotNull] MiniCSharpParser.UsingDirectiveContext context) { return VisitChildren(context); }
+	public virtual Result VisitUsingStat([NotNull] MiniCSharpParser.UsingStatContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.qualifiedIdentifier"/>.
+	/// Visit a parse tree produced by the <c>QualifiedIdent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.qualifiedIdentifier"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -64,9 +67,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitQualifiedIdentifier([NotNull] MiniCSharpParser.QualifiedIdentifierContext context) { return VisitChildren(context); }
+	public virtual Result VisitQualifiedIdent([NotNull] MiniCSharpParser.QualifiedIdentContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.varDecl"/>.
+	/// Visit a parse tree produced by the <c>VarDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.varDecl"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -74,9 +78,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitVarDecl([NotNull] MiniCSharpParser.VarDeclContext context) { return VisitChildren(context); }
+	public virtual Result VisitVarDeclaration([NotNull] MiniCSharpParser.VarDeclarationContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.classDecl"/>.
+	/// Visit a parse tree produced by the <c>ClassDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.classDecl"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -84,9 +89,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitClassDecl([NotNull] MiniCSharpParser.ClassDeclContext context) { return VisitChildren(context); }
+	public virtual Result VisitClassDeclaration([NotNull] MiniCSharpParser.ClassDeclarationContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.methodDecl"/>.
+	/// Visit a parse tree produced by the <c>MethodDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.methodDecl"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -94,9 +100,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitMethodDecl([NotNull] MiniCSharpParser.MethodDeclContext context) { return VisitChildren(context); }
+	public virtual Result VisitMethodDeclaration([NotNull] MiniCSharpParser.MethodDeclarationContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.formPars"/>.
+	/// Visit a parse tree produced by the <c>FormalParams</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.formPars"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -104,9 +111,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitFormPars([NotNull] MiniCSharpParser.FormParsContext context) { return VisitChildren(context); }
+	public virtual Result VisitFormalParams([NotNull] MiniCSharpParser.FormalParamsContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.type"/>.
+	/// Visit a parse tree produced by the <c>TypeIdent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.type"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -114,9 +122,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitType([NotNull] MiniCSharpParser.TypeContext context) { return VisitChildren(context); }
+	public virtual Result VisitTypeIdent([NotNull] MiniCSharpParser.TypeIdentContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.statement"/>.
+	/// Visit a parse tree produced by the <c>DesignatorStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -124,9 +133,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitStatement([NotNull] MiniCSharpParser.StatementContext context) { return VisitChildren(context); }
+	public virtual Result VisitDesignatorStatement([NotNull] MiniCSharpParser.DesignatorStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.switchStatement"/>.
+	/// Visit a parse tree produced by the <c>IfStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -134,9 +144,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSwitchStatement([NotNull] MiniCSharpParser.SwitchStatementContext context) { return VisitChildren(context); }
+	public virtual Result VisitIfStatement([NotNull] MiniCSharpParser.IfStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.switchBlock"/>.
+	/// Visit a parse tree produced by the <c>ForStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -144,9 +155,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSwitchBlock([NotNull] MiniCSharpParser.SwitchBlockContext context) { return VisitChildren(context); }
+	public virtual Result VisitForStatement([NotNull] MiniCSharpParser.ForStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.switchSection"/>.
+	/// Visit a parse tree produced by the <c>WhileStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -154,9 +166,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSwitchSection([NotNull] MiniCSharpParser.SwitchSectionContext context) { return VisitChildren(context); }
+	public virtual Result VisitWhileStatement([NotNull] MiniCSharpParser.WhileStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.switchLabel"/>.
+	/// Visit a parse tree produced by the <c>BreakStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -164,9 +177,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitSwitchLabel([NotNull] MiniCSharpParser.SwitchLabelContext context) { return VisitChildren(context); }
+	public virtual Result VisitBreakStatement([NotNull] MiniCSharpParser.BreakStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.block"/>.
+	/// Visit a parse tree produced by the <c>ReturnStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -174,9 +188,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitBlock([NotNull] MiniCSharpParser.BlockContext context) { return VisitChildren(context); }
+	public virtual Result VisitReturnStatement([NotNull] MiniCSharpParser.ReturnStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.actPars"/>.
+	/// Visit a parse tree produced by the <c>ReadStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -184,9 +199,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitActPars([NotNull] MiniCSharpParser.ActParsContext context) { return VisitChildren(context); }
+	public virtual Result VisitReadStatement([NotNull] MiniCSharpParser.ReadStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.condition"/>.
+	/// Visit a parse tree produced by the <c>WriteStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -194,9 +210,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitCondition([NotNull] MiniCSharpParser.ConditionContext context) { return VisitChildren(context); }
+	public virtual Result VisitWriteStatement([NotNull] MiniCSharpParser.WriteStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.condTerm"/>.
+	/// Visit a parse tree produced by the <c>BlockStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -204,9 +221,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitCondTerm([NotNull] MiniCSharpParser.CondTermContext context) { return VisitChildren(context); }
+	public virtual Result VisitBlockStatement([NotNull] MiniCSharpParser.BlockStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.condFact"/>.
+	/// Visit a parse tree produced by the <c>SwitchDispatchStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -214,9 +232,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitCondFact([NotNull] MiniCSharpParser.CondFactContext context) { return VisitChildren(context); }
+	public virtual Result VisitSwitchDispatchStatement([NotNull] MiniCSharpParser.SwitchDispatchStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.expr"/>.
+	/// Visit a parse tree produced by the <c>EmptyStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -224,9 +243,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitExpr([NotNull] MiniCSharpParser.ExprContext context) { return VisitChildren(context); }
+	public virtual Result VisitEmptyStatement([NotNull] MiniCSharpParser.EmptyStatementContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.cast"/>.
+	/// Visit a parse tree produced by the <c>SwitchStat</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchStatement"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -234,9 +254,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitCast([NotNull] MiniCSharpParser.CastContext context) { return VisitChildren(context); }
+	public virtual Result VisitSwitchStat([NotNull] MiniCSharpParser.SwitchStatContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.term"/>.
+	/// Visit a parse tree produced by the <c>SwitchBlockContent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchBlock"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -244,9 +265,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitTerm([NotNull] MiniCSharpParser.TermContext context) { return VisitChildren(context); }
+	public virtual Result VisitSwitchBlockContent([NotNull] MiniCSharpParser.SwitchBlockContentContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.factor"/>.
+	/// Visit a parse tree produced by the <c>SwitchCaseSection</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchSection"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -254,9 +276,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitFactor([NotNull] MiniCSharpParser.FactorContext context) { return VisitChildren(context); }
+	public virtual Result VisitSwitchCaseSection([NotNull] MiniCSharpParser.SwitchCaseSectionContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.designator"/>.
+	/// Visit a parse tree produced by the <c>CaseLabel</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchLabel"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -264,9 +287,10 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitDesignator([NotNull] MiniCSharpParser.DesignatorContext context) { return VisitChildren(context); }
+	public virtual Result VisitCaseLabel([NotNull] MiniCSharpParser.CaseLabelContext context) { return VisitChildren(context); }
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="MiniCSharpParser.relop"/>.
+	/// Visit a parse tree produced by the <c>DefaultLabel</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchLabel"/>.
 	/// <para>
 	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
 	/// on <paramref name="context"/>.
@@ -274,6 +298,226 @@ public partial class MiniCSharpParserBaseVisitor<Result> : AbstractParseTreeVisi
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	public virtual Result VisitRelop([NotNull] MiniCSharpParser.RelopContext context) { return VisitChildren(context); }
+	public virtual Result VisitDefaultLabel([NotNull] MiniCSharpParser.DefaultLabelContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>BlockNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.block"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitBlockNode([NotNull] MiniCSharpParser.BlockNodeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ActualParams</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.actPars"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitActualParams([NotNull] MiniCSharpParser.ActualParamsContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ConditionNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condition"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitConditionNode([NotNull] MiniCSharpParser.ConditionNodeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ConditionTermNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condTerm"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitConditionTermNode([NotNull] MiniCSharpParser.ConditionTermNodeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ConditionFactNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condFact"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitConditionFactNode([NotNull] MiniCSharpParser.ConditionFactNodeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>Expression</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.expr"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitExpression([NotNull] MiniCSharpParser.ExpressionContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>TypeCast</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.cast"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitTypeCast([NotNull] MiniCSharpParser.TypeCastContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>TermNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.term"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitTermNode([NotNull] MiniCSharpParser.TermNodeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>DesignatorFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitDesignatorFactor([NotNull] MiniCSharpParser.DesignatorFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>IntLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitIntLitFactor([NotNull] MiniCSharpParser.IntLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>DoubleLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitDoubleLitFactor([NotNull] MiniCSharpParser.DoubleLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>CharLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitCharLitFactor([NotNull] MiniCSharpParser.CharLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>StringLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitStringLitFactor([NotNull] MiniCSharpParser.StringLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>TrueLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitTrueLitFactor([NotNull] MiniCSharpParser.TrueLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>FalseLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitFalseLitFactor([NotNull] MiniCSharpParser.FalseLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>NullLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitNullLitFactor([NotNull] MiniCSharpParser.NullLitFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>NewObjectFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitNewObjectFactor([NotNull] MiniCSharpParser.NewObjectFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>ParenExpressionFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitParenExpressionFactor([NotNull] MiniCSharpParser.ParenExpressionFactorContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>DesignatorNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.designator"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitDesignatorNode([NotNull] MiniCSharpParser.DesignatorNodeContext context) { return VisitChildren(context); }
+	/// <summary>
+	/// Visit a parse tree produced by the <c>RelationalOp</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.relop"/>.
+	/// <para>
+	/// The default implementation returns the result of calling <see cref="AbstractParseTreeVisitor{Result}.VisitChildren(IRuleNode)"/>
+	/// on <paramref name="context"/>.
+	/// </para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	public virtual Result VisitRelationalOp([NotNull] MiniCSharpParser.RelationalOpContext context) { return VisitChildren(context); }
 }
 } // namespace parser.generated

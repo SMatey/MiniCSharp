@@ -37,293 +37,621 @@ using ParserRuleContext = Antlr4.Runtime.ParserRuleContext;
 [System.CLSCompliant(false)]
 public partial class MiniCSharpParserBaseListener : IMiniCSharpParserListener {
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.program"/>.
+	/// Enter a parse tree produced by the <c>Prog</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.program"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterProgram([NotNull] MiniCSharpParser.ProgramContext context) { }
+	public virtual void EnterProg([NotNull] MiniCSharpParser.ProgContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.program"/>.
+	/// Exit a parse tree produced by the <c>Prog</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.program"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitProgram([NotNull] MiniCSharpParser.ProgramContext context) { }
+	public virtual void ExitProg([NotNull] MiniCSharpParser.ProgContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.usingDirective"/>.
+	/// Enter a parse tree produced by the <c>UsingStat</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.usingDirective"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterUsingDirective([NotNull] MiniCSharpParser.UsingDirectiveContext context) { }
+	public virtual void EnterUsingStat([NotNull] MiniCSharpParser.UsingStatContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.usingDirective"/>.
+	/// Exit a parse tree produced by the <c>UsingStat</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.usingDirective"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitUsingDirective([NotNull] MiniCSharpParser.UsingDirectiveContext context) { }
+	public virtual void ExitUsingStat([NotNull] MiniCSharpParser.UsingStatContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.qualifiedIdentifier"/>.
+	/// Enter a parse tree produced by the <c>QualifiedIdent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.qualifiedIdentifier"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterQualifiedIdentifier([NotNull] MiniCSharpParser.QualifiedIdentifierContext context) { }
+	public virtual void EnterQualifiedIdent([NotNull] MiniCSharpParser.QualifiedIdentContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.qualifiedIdentifier"/>.
+	/// Exit a parse tree produced by the <c>QualifiedIdent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.qualifiedIdentifier"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitQualifiedIdentifier([NotNull] MiniCSharpParser.QualifiedIdentifierContext context) { }
+	public virtual void ExitQualifiedIdent([NotNull] MiniCSharpParser.QualifiedIdentContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.varDecl"/>.
+	/// Enter a parse tree produced by the <c>VarDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.varDecl"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterVarDecl([NotNull] MiniCSharpParser.VarDeclContext context) { }
+	public virtual void EnterVarDeclaration([NotNull] MiniCSharpParser.VarDeclarationContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.varDecl"/>.
+	/// Exit a parse tree produced by the <c>VarDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.varDecl"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitVarDecl([NotNull] MiniCSharpParser.VarDeclContext context) { }
+	public virtual void ExitVarDeclaration([NotNull] MiniCSharpParser.VarDeclarationContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.classDecl"/>.
+	/// Enter a parse tree produced by the <c>ClassDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.classDecl"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterClassDecl([NotNull] MiniCSharpParser.ClassDeclContext context) { }
+	public virtual void EnterClassDeclaration([NotNull] MiniCSharpParser.ClassDeclarationContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.classDecl"/>.
+	/// Exit a parse tree produced by the <c>ClassDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.classDecl"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitClassDecl([NotNull] MiniCSharpParser.ClassDeclContext context) { }
+	public virtual void ExitClassDeclaration([NotNull] MiniCSharpParser.ClassDeclarationContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.methodDecl"/>.
+	/// Enter a parse tree produced by the <c>MethodDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.methodDecl"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterMethodDecl([NotNull] MiniCSharpParser.MethodDeclContext context) { }
+	public virtual void EnterMethodDeclaration([NotNull] MiniCSharpParser.MethodDeclarationContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.methodDecl"/>.
+	/// Exit a parse tree produced by the <c>MethodDeclaration</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.methodDecl"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitMethodDecl([NotNull] MiniCSharpParser.MethodDeclContext context) { }
+	public virtual void ExitMethodDeclaration([NotNull] MiniCSharpParser.MethodDeclarationContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.formPars"/>.
+	/// Enter a parse tree produced by the <c>FormalParams</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.formPars"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterFormPars([NotNull] MiniCSharpParser.FormParsContext context) { }
+	public virtual void EnterFormalParams([NotNull] MiniCSharpParser.FormalParamsContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.formPars"/>.
+	/// Exit a parse tree produced by the <c>FormalParams</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.formPars"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitFormPars([NotNull] MiniCSharpParser.FormParsContext context) { }
+	public virtual void ExitFormalParams([NotNull] MiniCSharpParser.FormalParamsContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.type"/>.
+	/// Enter a parse tree produced by the <c>TypeIdent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.type"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterType([NotNull] MiniCSharpParser.TypeContext context) { }
+	public virtual void EnterTypeIdent([NotNull] MiniCSharpParser.TypeIdentContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.type"/>.
+	/// Exit a parse tree produced by the <c>TypeIdent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.type"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitType([NotNull] MiniCSharpParser.TypeContext context) { }
+	public virtual void ExitTypeIdent([NotNull] MiniCSharpParser.TypeIdentContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.statement"/>.
+	/// Enter a parse tree produced by the <c>DesignatorStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterStatement([NotNull] MiniCSharpParser.StatementContext context) { }
+	public virtual void EnterDesignatorStatement([NotNull] MiniCSharpParser.DesignatorStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.statement"/>.
+	/// Exit a parse tree produced by the <c>DesignatorStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitStatement([NotNull] MiniCSharpParser.StatementContext context) { }
+	public virtual void ExitDesignatorStatement([NotNull] MiniCSharpParser.DesignatorStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.switchStatement"/>.
+	/// Enter a parse tree produced by the <c>IfStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterSwitchStatement([NotNull] MiniCSharpParser.SwitchStatementContext context) { }
+	public virtual void EnterIfStatement([NotNull] MiniCSharpParser.IfStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.switchStatement"/>.
+	/// Exit a parse tree produced by the <c>IfStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitSwitchStatement([NotNull] MiniCSharpParser.SwitchStatementContext context) { }
+	public virtual void ExitIfStatement([NotNull] MiniCSharpParser.IfStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.switchBlock"/>.
+	/// Enter a parse tree produced by the <c>ForStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterSwitchBlock([NotNull] MiniCSharpParser.SwitchBlockContext context) { }
+	public virtual void EnterForStatement([NotNull] MiniCSharpParser.ForStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.switchBlock"/>.
+	/// Exit a parse tree produced by the <c>ForStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitSwitchBlock([NotNull] MiniCSharpParser.SwitchBlockContext context) { }
+	public virtual void ExitForStatement([NotNull] MiniCSharpParser.ForStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.switchSection"/>.
+	/// Enter a parse tree produced by the <c>WhileStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterSwitchSection([NotNull] MiniCSharpParser.SwitchSectionContext context) { }
+	public virtual void EnterWhileStatement([NotNull] MiniCSharpParser.WhileStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.switchSection"/>.
+	/// Exit a parse tree produced by the <c>WhileStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitSwitchSection([NotNull] MiniCSharpParser.SwitchSectionContext context) { }
+	public virtual void ExitWhileStatement([NotNull] MiniCSharpParser.WhileStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.switchLabel"/>.
+	/// Enter a parse tree produced by the <c>BreakStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterSwitchLabel([NotNull] MiniCSharpParser.SwitchLabelContext context) { }
+	public virtual void EnterBreakStatement([NotNull] MiniCSharpParser.BreakStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.switchLabel"/>.
+	/// Exit a parse tree produced by the <c>BreakStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitSwitchLabel([NotNull] MiniCSharpParser.SwitchLabelContext context) { }
+	public virtual void ExitBreakStatement([NotNull] MiniCSharpParser.BreakStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.block"/>.
+	/// Enter a parse tree produced by the <c>ReturnStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterBlock([NotNull] MiniCSharpParser.BlockContext context) { }
+	public virtual void EnterReturnStatement([NotNull] MiniCSharpParser.ReturnStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.block"/>.
+	/// Exit a parse tree produced by the <c>ReturnStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitBlock([NotNull] MiniCSharpParser.BlockContext context) { }
+	public virtual void ExitReturnStatement([NotNull] MiniCSharpParser.ReturnStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.actPars"/>.
+	/// Enter a parse tree produced by the <c>ReadStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterActPars([NotNull] MiniCSharpParser.ActParsContext context) { }
+	public virtual void EnterReadStatement([NotNull] MiniCSharpParser.ReadStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.actPars"/>.
+	/// Exit a parse tree produced by the <c>ReadStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitActPars([NotNull] MiniCSharpParser.ActParsContext context) { }
+	public virtual void ExitReadStatement([NotNull] MiniCSharpParser.ReadStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.condition"/>.
+	/// Enter a parse tree produced by the <c>WriteStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterCondition([NotNull] MiniCSharpParser.ConditionContext context) { }
+	public virtual void EnterWriteStatement([NotNull] MiniCSharpParser.WriteStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.condition"/>.
+	/// Exit a parse tree produced by the <c>WriteStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitCondition([NotNull] MiniCSharpParser.ConditionContext context) { }
+	public virtual void ExitWriteStatement([NotNull] MiniCSharpParser.WriteStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.condTerm"/>.
+	/// Enter a parse tree produced by the <c>BlockStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterCondTerm([NotNull] MiniCSharpParser.CondTermContext context) { }
+	public virtual void EnterBlockStatement([NotNull] MiniCSharpParser.BlockStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.condTerm"/>.
+	/// Exit a parse tree produced by the <c>BlockStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitCondTerm([NotNull] MiniCSharpParser.CondTermContext context) { }
+	public virtual void ExitBlockStatement([NotNull] MiniCSharpParser.BlockStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.condFact"/>.
+	/// Enter a parse tree produced by the <c>SwitchDispatchStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterCondFact([NotNull] MiniCSharpParser.CondFactContext context) { }
+	public virtual void EnterSwitchDispatchStatement([NotNull] MiniCSharpParser.SwitchDispatchStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.condFact"/>.
+	/// Exit a parse tree produced by the <c>SwitchDispatchStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitCondFact([NotNull] MiniCSharpParser.CondFactContext context) { }
+	public virtual void ExitSwitchDispatchStatement([NotNull] MiniCSharpParser.SwitchDispatchStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.expr"/>.
+	/// Enter a parse tree produced by the <c>EmptyStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterExpr([NotNull] MiniCSharpParser.ExprContext context) { }
+	public virtual void EnterEmptyStatement([NotNull] MiniCSharpParser.EmptyStatementContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.expr"/>.
+	/// Exit a parse tree produced by the <c>EmptyStatement</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.statement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitExpr([NotNull] MiniCSharpParser.ExprContext context) { }
+	public virtual void ExitEmptyStatement([NotNull] MiniCSharpParser.EmptyStatementContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.cast"/>.
+	/// Enter a parse tree produced by the <c>SwitchStat</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchStatement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterCast([NotNull] MiniCSharpParser.CastContext context) { }
+	public virtual void EnterSwitchStat([NotNull] MiniCSharpParser.SwitchStatContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.cast"/>.
+	/// Exit a parse tree produced by the <c>SwitchStat</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchStatement"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitCast([NotNull] MiniCSharpParser.CastContext context) { }
+	public virtual void ExitSwitchStat([NotNull] MiniCSharpParser.SwitchStatContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.term"/>.
+	/// Enter a parse tree produced by the <c>SwitchBlockContent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchBlock"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterTerm([NotNull] MiniCSharpParser.TermContext context) { }
+	public virtual void EnterSwitchBlockContent([NotNull] MiniCSharpParser.SwitchBlockContentContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.term"/>.
+	/// Exit a parse tree produced by the <c>SwitchBlockContent</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchBlock"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitTerm([NotNull] MiniCSharpParser.TermContext context) { }
+	public virtual void ExitSwitchBlockContent([NotNull] MiniCSharpParser.SwitchBlockContentContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.factor"/>.
+	/// Enter a parse tree produced by the <c>SwitchCaseSection</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchSection"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterFactor([NotNull] MiniCSharpParser.FactorContext context) { }
+	public virtual void EnterSwitchCaseSection([NotNull] MiniCSharpParser.SwitchCaseSectionContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.factor"/>.
+	/// Exit a parse tree produced by the <c>SwitchCaseSection</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchSection"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitFactor([NotNull] MiniCSharpParser.FactorContext context) { }
+	public virtual void ExitSwitchCaseSection([NotNull] MiniCSharpParser.SwitchCaseSectionContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.designator"/>.
+	/// Enter a parse tree produced by the <c>CaseLabel</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchLabel"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterDesignator([NotNull] MiniCSharpParser.DesignatorContext context) { }
+	public virtual void EnterCaseLabel([NotNull] MiniCSharpParser.CaseLabelContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.designator"/>.
+	/// Exit a parse tree produced by the <c>CaseLabel</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchLabel"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitDesignator([NotNull] MiniCSharpParser.DesignatorContext context) { }
+	public virtual void ExitCaseLabel([NotNull] MiniCSharpParser.CaseLabelContext context) { }
 	/// <summary>
-	/// Enter a parse tree produced by <see cref="MiniCSharpParser.relop"/>.
+	/// Enter a parse tree produced by the <c>DefaultLabel</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchLabel"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void EnterRelop([NotNull] MiniCSharpParser.RelopContext context) { }
+	public virtual void EnterDefaultLabel([NotNull] MiniCSharpParser.DefaultLabelContext context) { }
 	/// <summary>
-	/// Exit a parse tree produced by <see cref="MiniCSharpParser.relop"/>.
+	/// Exit a parse tree produced by the <c>DefaultLabel</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.switchLabel"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
-	public virtual void ExitRelop([NotNull] MiniCSharpParser.RelopContext context) { }
+	public virtual void ExitDefaultLabel([NotNull] MiniCSharpParser.DefaultLabelContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>BlockNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.block"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterBlockNode([NotNull] MiniCSharpParser.BlockNodeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>BlockNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.block"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitBlockNode([NotNull] MiniCSharpParser.BlockNodeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ActualParams</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.actPars"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterActualParams([NotNull] MiniCSharpParser.ActualParamsContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ActualParams</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.actPars"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitActualParams([NotNull] MiniCSharpParser.ActualParamsContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ConditionNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterConditionNode([NotNull] MiniCSharpParser.ConditionNodeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ConditionNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condition"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitConditionNode([NotNull] MiniCSharpParser.ConditionNodeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ConditionTermNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condTerm"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterConditionTermNode([NotNull] MiniCSharpParser.ConditionTermNodeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ConditionTermNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condTerm"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitConditionTermNode([NotNull] MiniCSharpParser.ConditionTermNodeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ConditionFactNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condFact"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterConditionFactNode([NotNull] MiniCSharpParser.ConditionFactNodeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ConditionFactNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.condFact"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitConditionFactNode([NotNull] MiniCSharpParser.ConditionFactNodeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>Expression</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterExpression([NotNull] MiniCSharpParser.ExpressionContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>Expression</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.expr"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitExpression([NotNull] MiniCSharpParser.ExpressionContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>TypeCast</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.cast"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterTypeCast([NotNull] MiniCSharpParser.TypeCastContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>TypeCast</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.cast"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitTypeCast([NotNull] MiniCSharpParser.TypeCastContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>TermNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.term"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterTermNode([NotNull] MiniCSharpParser.TermNodeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>TermNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.term"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitTermNode([NotNull] MiniCSharpParser.TermNodeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>DesignatorFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterDesignatorFactor([NotNull] MiniCSharpParser.DesignatorFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>DesignatorFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitDesignatorFactor([NotNull] MiniCSharpParser.DesignatorFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>IntLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterIntLitFactor([NotNull] MiniCSharpParser.IntLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>IntLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitIntLitFactor([NotNull] MiniCSharpParser.IntLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>DoubleLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterDoubleLitFactor([NotNull] MiniCSharpParser.DoubleLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>DoubleLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitDoubleLitFactor([NotNull] MiniCSharpParser.DoubleLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>CharLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterCharLitFactor([NotNull] MiniCSharpParser.CharLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>CharLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitCharLitFactor([NotNull] MiniCSharpParser.CharLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>StringLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterStringLitFactor([NotNull] MiniCSharpParser.StringLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>StringLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitStringLitFactor([NotNull] MiniCSharpParser.StringLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>TrueLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterTrueLitFactor([NotNull] MiniCSharpParser.TrueLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>TrueLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitTrueLitFactor([NotNull] MiniCSharpParser.TrueLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>FalseLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterFalseLitFactor([NotNull] MiniCSharpParser.FalseLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>FalseLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitFalseLitFactor([NotNull] MiniCSharpParser.FalseLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>NullLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterNullLitFactor([NotNull] MiniCSharpParser.NullLitFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>NullLitFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitNullLitFactor([NotNull] MiniCSharpParser.NullLitFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>NewObjectFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterNewObjectFactor([NotNull] MiniCSharpParser.NewObjectFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>NewObjectFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitNewObjectFactor([NotNull] MiniCSharpParser.NewObjectFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>ParenExpressionFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterParenExpressionFactor([NotNull] MiniCSharpParser.ParenExpressionFactorContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>ParenExpressionFactor</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.factor"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitParenExpressionFactor([NotNull] MiniCSharpParser.ParenExpressionFactorContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>DesignatorNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.designator"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterDesignatorNode([NotNull] MiniCSharpParser.DesignatorNodeContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>DesignatorNode</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.designator"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitDesignatorNode([NotNull] MiniCSharpParser.DesignatorNodeContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by the <c>RelationalOp</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.relop"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterRelationalOp([NotNull] MiniCSharpParser.RelationalOpContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by the <c>RelationalOp</c>
+	/// labeled alternative in <see cref="MiniCSharpParser.relop"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitRelationalOp([NotNull] MiniCSharpParser.RelationalOpContext context) { }
 
 	/// <inheritdoc/>
 	/// <remarks>The default implementation does nothing.</remarks>

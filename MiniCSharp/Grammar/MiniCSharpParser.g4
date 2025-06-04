@@ -4,112 +4,105 @@ options {
     tokenVocab=MiniCSharpLexer; 
 }
 
-// Regla inicial del programa
-program      : usingDirective* CLASS ID LBRACE (varDecl | classDecl | methodDecl)* RBRACE ;
 
-// Directiva 'using' para importar namespaces/clases
+program      : usingDirective* CLASS ID LBRACE (varDecl | classDecl | methodDecl)* RBRACE    # Prog;
+
+
 usingDirective
-    : USING qualifiedIdentifier SEMICOLON
-    ;
+    : USING qualifiedIdentifier SEMICOLON                                                   # UsingStat;
 
-// Identificador calificado (ej. System.Collections)
+
 qualifiedIdentifier
-    : ID (DOT ID)*
-    ;
+    : ID (DOT ID)* # QualifiedIdent;
 
-// Declaracion de variable
-varDecl      : type ID (COMMA ID)* SEMICOLON ;
 
-// Declaracion de clase interna 
-classDecl    : CLASS ID LBRACE varDecl* RBRACE ;
+varDecl      : type ID (COMMA ID)* SEMICOLON                                                 # VarDeclaration;
 
-// Declaracion de metodo
-methodDecl   : (type | VOID) ID LPAREN formPars? RPAREN block ;
 
-// Parametros formales de un metodo
-formPars     : type ID (COMMA type ID)* ;
+classDecl    : CLASS ID LBRACE varDecl* RBRACE                                               # ClassDeclaration;
 
-// Definición de tipo (int, char, MiClase, int[])
-type         : ID (LBRACK RBRACK)? ; 
 
-// Sentencias
+methodDecl   : (type | VOID) ID LPAREN formPars? RPAREN block                                # MethodDeclaration;
+
+
+formPars     : type ID (COMMA type ID)* # FormalParams;
+
+
+type         : ID (LBRACK RBRACK)?                                                           # TypeIdent;
+
+
 statement
-    : designator (ASSIGN expr | LPAREN actPars? RPAREN | INCREMENT | DECREMENT) SEMICOLON 
-    | IF LPAREN condition RPAREN statement (ELSE statement)?             
-    | FOR LPAREN expr SEMICOLON condition? SEMICOLON statement? RPAREN statement 
-    | WHILE LPAREN condition RPAREN statement                           
-    | BREAK SEMICOLON                                                    
-    | RETURN expr? SEMICOLON                                             
-    | READ LPAREN designator RPAREN SEMICOLON                            
-    | WRITE LPAREN expr (COMMA INTLIT)? RPAREN SEMICOLON                 
-    | block                                                              
-    | switchStatement                                                    
-    | SEMICOLON                                                          
+    : designator (ASSIGN expr | LPAREN actPars? RPAREN | INCREMENT | DECREMENT) SEMICOLON # DesignatorStatement
+    | IF LPAREN condition RPAREN statement (ELSE statement)?             # IfStatement
+    | FOR LPAREN expr SEMICOLON condition? SEMICOLON statement? RPAREN statement # ForStatement
+    | WHILE LPAREN condition RPAREN statement                            # WhileStatement
+    | BREAK SEMICOLON                                                    # BreakStatement
+    | RETURN expr? SEMICOLON                                             # ReturnStatement
+    | READ LPAREN designator RPAREN SEMICOLON                            # ReadStatement
+    | WRITE LPAREN expr (COMMA INTLIT)? RPAREN SEMICOLON                 # WriteStatement
+    | block                                                              # BlockStatement
+    | switchStatement                                                    # SwitchDispatchStatement
+    | SEMICOLON                                                          # EmptyStatement
     ;
 
-// Sentencia Switch
+
 switchStatement
-    : SWITCH LPAREN expr RPAREN LBRACE switchBlock RBRACE
-    ;
+    : SWITCH LPAREN expr RPAREN LBRACE switchBlock RBRACE                # SwitchStat;
 
-// Bloque interno de un switch, contiene secciones de case/default
+
 switchBlock
-    : switchSection* // Puede tener cero o más secciones
-    ;
+    : switchSection* # SwitchBlockContent;
 
-// Sección de un switch, consiste en una o más etiquetas y luego sentencias
+
 switchSection
-    : switchLabel+ statement* 
-    ;
+    : switchLabel+ statement* # SwitchCaseSection;
 
-// Etiqueta de un switch (case o default)
+
 switchLabel
-    : CASE expr COLON
-    | DEFAULT COLON
+    : CASE expr COLON                                                    # CaseLabel
+    | DEFAULT COLON                                                      # DefaultLabel
     ;
 
-// Bloque de codigo 
-block        : LBRACE (varDecl | statement)* RBRACE ;
 
-// Parametros actuales en una llamada a metodo
-actPars      : expr (COMMA expr)* ;
+block        : LBRACE (varDecl | statement)* RBRACE                      # BlockNode;
 
-// Condicion logica (usada en if, while, for)
-condition    : condTerm (OR condTerm)* ;
 
-// Termino de una condicion
-condTerm     : condFact (AND condFact)* ;
+actPars      : expr (COMMA expr)* # ActualParams;
 
-// Factor de una condicion (comparación)
-condFact     : expr relop expr ;
 
-// Expresion general
-expr         : ADDOP? cast? term (ADDOP term)* ; 
+condition    : condTerm (OR condTerm)* # ConditionNode;
 
-// Operacion de casting de tipo
-cast         : LPAREN type RPAREN ;
 
-// Termino en una expresion 
-term         : factor (MULOP factor)* ;
+condTerm     : condFact (AND condFact)* # ConditionTermNode;
 
-// Factor, la unidad mas pequeña en una expresion
+
+condFact     : expr relop expr                                           # ConditionFactNode;
+
+
+expr         : ADDOP? cast? term (ADDOP term)* # Expression;
+
+
+cast         : LPAREN type RPAREN                                        # TypeCast;
+
+
+term         : factor (MULOP factor)* # TermNode;
+
 factor
-    : designator (LPAREN actPars? RPAREN)? 
-    | INTLIT                               
-    | DOUBLELIT                           
-    | CHARLIT                              
-    | STRINGLIT                           
-    | TRUE                                 
-    | FALSE                              
-    | NULL                                 
-    | NEW ID ( (LBRACK RBRACK)       
-             | (LBRACK expr RBRACK)  
-             )?                     
-    | LPAREN expr RPAREN                   
+    : designator (LPAREN actPars? RPAREN)? # DesignatorFactor 
+    | INTLIT                               # IntLitFactor
+    | DOUBLELIT                            # DoubleLitFactor
+    | CHARLIT                              # CharLitFactor
+    | STRINGLIT                            # StringLitFactor
+    | TRUE                                 # TrueLitFactor
+    | FALSE                                # FalseLitFactor
+    | NULL                                 # NullLitFactor
+    | NEW ID ( (LBRACK RBRACK)             
+             )?                            # NewObjectFactor 
+    | LPAREN expr RPAREN                   # ParenExpressionFactor
     ;
 
-// Designador (identificador, acceso a miembro de clase, o acceso a elemento de array)
-designator   : ID (DOT ID | LBRACK expr RBRACK)* ;
 
-// Operador relacional (token definido en el lexer)
-relop        : RELOP ;
+designator   : ID (DOT ID | LBRACK expr RBRACK)* # DesignatorNode;
+
+
+relop        : RELOP                                                     # RelationalOp;

@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Grammar\Checker\MiniCSharpChecker.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Grammar\parser\generated\**\*.cs" />
   </ItemGroup>
