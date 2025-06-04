@@ -1,6 +1,6 @@
 lexer grammar MiniCSharpLexer;
 
-// Palabras clave
+// Keywords
 CLASS       : 'class';
 VOID        : 'void';
 IF          : 'if';
@@ -20,7 +20,7 @@ SWITCH      : 'switch';
 CASE        : 'case';
 DEFAULT     : 'default';
 
-// Operadores
+// simbolos
 ASSIGN      : '=';
 ADDOP       : '+' | '-';
 MULOP       : '*' | '/' | '%';
@@ -29,8 +29,6 @@ AND         : '&&';
 OR          : '||';
 INCREMENT   : '++';
 DECREMENT   : '--';
-
-// Delimitadores
 LPAREN      : '(';
 RPAREN      : ')';
 LBRACE      : '{';
@@ -46,25 +44,20 @@ COLON       : ':';
 INTLIT      : '0' | [1-9][0-9]*;
 DOUBLELIT   : [0-9]+ '.' [0-9]+;
 
-
 CHARLIT     : '\'' CharContent '\'' ;
 
 STRINGLIT   : '"' ( ~["\\\r\n] | '\\' . )*? '"'; 
 
-// Identificadores
+// ID
 ID          : [a-zA-Z_] [a-zA-Z_0-9]*;
 
-// Comentarios
+// comentarios
 COMMENT     : '/*' .*? '*/' -> channel(HIDDEN);
 LINECOMMENT : '//' ~[\r\n]* -> channel(HIDDEN);
 
 // Espacios ignorados
 WS          : [ \t\r\n]+ -> skip;
 
-// --- Fragment rules para CHARLIT ---
-// Un fragmento define una parte de una regla léxica, no un token por sí mismo.
-
-// Contenido de un literal de carácter
 fragment CharContent
     : CharEscapeSequence 
     | ~['\\\r\n]       

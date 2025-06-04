@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "Qos9eDr6UbU=",
+  "dgSpecHash": "DBPpYVhMX9k=",
   "success": true,
-  "projectFilePath": "C:\\Users\\carlo\\RiderProjects\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
+  "projectFilePath": "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\carlo\\.nuget\\packages\\antlr4.runtime.standard\\4.13.1\\antlr4.runtime.standard.4.13.1.nupkg.sha512"
+    "C:\\Users\\casam\\.nuget\\packages\\antlr4.runtime.standard\\4.13.1\\antlr4.runtime.standard.4.13.1.nupkg.sha512"
   ],
   "logs": []
 }
