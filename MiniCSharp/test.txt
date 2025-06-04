@@ -1,8 +1,9 @@
-class P {
-    void Main() {
-        int x, y;
-        x = 5;
-        y = x + 3;
-        write(x);
+// Contenido para test.txt (Prueba 4)
+
+class MiPrograma
+{
+    int Sumar(int a, int b)
+    {
+        return a + b; // Necesitaremos la regla 'statement' para el return y 'expr'
     }
 }

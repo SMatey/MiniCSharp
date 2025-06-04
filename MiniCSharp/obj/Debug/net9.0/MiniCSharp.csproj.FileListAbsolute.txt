@@ -14,13 +14,6 @@ C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp
 C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.genruntimeconfig.cache
 C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\ref\MiniCSharp.dll
 C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.csproj.AssemblyReference.cache
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpLexer.cs
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParser.cs
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserListener.cs
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserBaseListener.cs
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserVisitor.cs
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharpParserBaseVisitor.cs
-C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.csproj.Antlr4GeneratedCodeFileListAbsolute.txt
 C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.exe
 C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.deps.json
 C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.runtimeconfig.json
@@ -39,3 +32,5 @@ C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\obj\Debug\net9.0\refint\MiniC
 C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.pdb
 C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.genruntimeconfig.cache
 C:\Users\Lizsa\RiderProjects\MiniCSharp\MiniCSharp\obj\Debug\net9.0\ref\MiniCSharp.dll
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\bin\Debug\net9.0\Antlr4.Runtime.Standard.dll
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.csproj.Up2Date

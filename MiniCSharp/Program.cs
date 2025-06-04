@@ -2,13 +2,14 @@
 using System.IO;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
+using parser.generated;
 
 
 class Program
 {
     static void Main(string[] args)
     {
-        var filePath = "C:\\Users\\Lizsa\\RiderProjects\\MiniCSharp\\MiniCSharp\\test.txt"; 
+        var filePath = "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\test.txt"; 
 
         if (!File.Exists(filePath))
         {
