@@ -1,33 +1,131 @@
 using Antlr4.Runtime.Tree;
+using Antlr4.Runtime;
 using parser.generated;
+using System.Collections.Generic;
 
 namespace MiniCSharp.Grammar.Checker
 {
     public class MiniCsharpChecker : MiniCSharpParserBaseVisitor<object>
     {
+        private TablaSimbolos symbolTable;
+        public List<string> Errors { get; private set; }
         public MiniCsharpChecker()
         {
-            
+            this.symbolTable = new TablaSimbolos();
+            this.Errors = new List<string>();
         }
 
         public override object VisitProg(MiniCSharpParser.ProgContext context)
         {
-            return base.VisitProg(context);
+            symbolTable.OpenScope(); 
+            
+            foreach (var usingDirContext in context.usingDirective()) //
+            {
+                Visit(usingDirContext); 
+            }
+            
+            IToken classNameToken = context.ID().Symbol; 
+            foreach (var varDeclContext in context.varDecl()) 
+            {
+                Visit(varDeclContext); 
+            }
+
+            foreach (var classDeclContext in context.classDecl()) 
+            {
+                Visit(classDeclContext); 
+            }
+            
+            
+            foreach (var methodDeclContext in context.methodDecl()) 
+            {
+                Visit(methodDeclContext); 
+            }
+            
+            symbolTable.CloseScope(); 
+
+            
+            return null; 
         }
 
         public override object VisitUsingStat(MiniCSharpParser.UsingStatContext context)
         {
-            return base.VisitUsingStat(context);
+            Visit(context.qualifiedIdentifier());
+            
+            var qualifiedIdentCtx = context.qualifiedIdentifier() as MiniCSharpParser.QualifiedIdentContext;
+            if (qualifiedIdentCtx != null)
+            {
+                
+                string namespaceIdentifier = qualifiedIdentCtx.GetText();
+                Console.WriteLine($"Checker DBG: VisitUsingStat - procesando 'using {namespaceIdentifier};'"); // Para depuración
+            }
+            
+            return null; 
         }
 
         public override object VisitQualifiedIdent(MiniCSharpParser.QualifiedIdentContext context)
         {
-            return base.VisitQualifiedIdent(context);
+            string fullIdentifier = context.GetText();
+            Console.WriteLine($"Checker DBG: VisitQualifiedIdent - identificador: {fullIdentifier}"); // Para depuración
+            return null;
         }
 
         public override object VisitVarDeclaration(MiniCSharpParser.VarDeclarationContext context)
         {
-            return base.VisitVarDeclaration(context);
+            // 1. Determinar el tipo de la declaración.
+            // Visitamos el nodo 'type' que nos devolverá el código del tipo (int, char, etc.)
+            // o el código de un tipo de clase si es un objeto.
+            object typeResult = Visit(context.type()); // Esto llamará a VisitTypeIdent
+
+            if (!(typeResult is int resolvedTypeCode))
+            {
+                // Si VisitTypeIdent no pudo resolver el tipo o devolvió algo inesperado.
+                // VisitTypeIdent ya debería haber reportado un error específico.
+                // No continuamos con la declaración de estas variables si el tipo es inválido.
+                // Reportar un error genérico aquí podría ser redundante si VisitTypeIdent ya lo hizo.
+                // Errors.Add($"Error: Tipo desconocido o inválido en la declaración de variable cerca de '{context.type().GetText()}' en línea {context.type().Start.Line}.");
+                return null;
+            }
+
+            if (resolvedTypeCode == TablaSimbolos.UnknownType)
+            {
+                // VisitTypeIdent ya reportó el error específico.
+                // No declaramos variables con un tipo desconocido.
+                return null;
+            }
+            
+            if (resolvedTypeCode == TablaSimbolos.VoidType && context.type().ID().GetText() == "void")
+            {
+                // No se pueden declarar variables de tipo 'void'.
+                // VisitTypeIdent podría devolver VoidType si el ID es "void".
+                Errors.Add($"Error: No se puede declarar una variable de tipo 'void' ('{context.GetText()}' en línea {context.Start.Line}).");
+                return null;
+            }
+
+            // 2. Determinar si es un array.
+            // La regla 'type' es: ID (LBRACK RBRACK)?
+            bool isArray = context.type().LBRACK() != null; //
+
+            // 3. Registrar cada identificador (variable) en la tabla de símbolos.
+            // La regla 'varDecl' es: type ID (COMMA ID)* SEMICOLON
+            // context.ID() devuelve una lista de todos los tokens ID.
+            foreach (IToken idToken in context.ID())
+            {
+                string varName = idToken.Text;
+
+                // Verificar si la variable ya ha sido declarada en el ámbito actual.
+                if (symbolTable.BuscarNivelActual(varName) != null)
+                {
+                    Errors.Add($"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
+                }
+                else
+                {
+                    // Insertar la variable en la tabla de símbolos.
+                    symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, context);
+                    // Console.WriteLine($"Checker DBG: Declarada variable '{varName}' de tipo {TablaSimbolos.TypeToString(resolvedTypeCode)}{(isArray ? "[]" : "")} en nivel {symbolTable.NivelActual}");
+                }
+            }
+
+            return null;
         }
 
         public override object VisitClassDeclaration(MiniCSharpParser.ClassDeclarationContext context)
@@ -256,5 +354,4 @@ namespace MiniCSharp.Grammar.Checker
         }
     }
     
-
 }

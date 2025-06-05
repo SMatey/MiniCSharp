@@ -1,9 +1,11 @@
-// Contenido para test.txt (Prueba 4)
+// test.txt
 
-class MiPrograma
+using System;
+using System.Collections.Generic;
+using MyOrg.MyNamespace.MyUtils; // Un ejemplo más complejo
+
+class MyTestProgram
 {
-    int Sumar(int a, int b)
-    {
-        return a + b; // Necesitaremos la regla 'statement' para el return y 'expr'
-    }
+    // Puedes añadir declaraciones aquí si quieres probar otras cosas,
+    // pero para 'using' esto es suficiente.
 }
