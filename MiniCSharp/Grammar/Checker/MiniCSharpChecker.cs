@@ -9,6 +9,9 @@ namespace MiniCSharp.Grammar.Checker
     {
         private TablaSimbolos symbolTable;
         public List<string> Errors { get; private set; }
+        
+        private TablaSimbolos.MethodIdent currentProcessingMethod = null;
+        private int currentMethodBodyScopeLevel = -1;
         public MiniCsharpChecker()
         {
             this.symbolTable = new TablaSimbolos();
@@ -18,32 +21,33 @@ namespace MiniCSharp.Grammar.Checker
         public override object VisitProg(MiniCSharpParser.ProgContext context)
         {
             symbolTable.OpenScope(); 
-            
-            foreach (var usingDirContext in context.usingDirective()) //
+
+            foreach (var usingDirContext in context.usingDirective())
             {
                 Visit(usingDirContext); 
             }
-            
+
             IToken classNameToken = context.ID().Symbol; 
-            foreach (var varDeclContext in context.varDecl()) 
-            {
-                Visit(varDeclContext); 
-            }
+            string mainClassName = classNameToken.Text; // Para depuración o mensajes
 
-            foreach (var classDeclContext in context.classDecl()) 
+            if (context.children != null)
             {
-                Visit(classDeclContext); 
+                foreach (IParseTree child in context.children)
+                {
+                    if (child is MiniCSharpParser.VarDeclarationContext ||
+                        child is MiniCSharpParser.ClassDeclarationContext ||
+                        child is MiniCSharpParser.MethodDeclarationContext)
+                    {
+                        Visit(child); 
+                    }
+                }
             }
+    
             
-            
-            foreach (var methodDeclContext in context.methodDecl()) 
-            {
-                Visit(methodDeclContext); 
-            }
-            
+            Console.WriteLine($"--- Symbol Table for Program/Class: {mainClassName} (Level: {symbolTable.NivelActual}) ---");
+            symbolTable.Imprimir();
+
             symbolTable.CloseScope(); 
-
-            
             return null; 
         }
 
@@ -71,86 +75,353 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitVarDeclaration(MiniCSharpParser.VarDeclarationContext context)
         {
-            // 1. Determinar el tipo de la declaración.
-            // Visitamos el nodo 'type' que nos devolverá el código del tipo (int, char, etc.)
-            // o el código de un tipo de clase si es un objeto.
-            object typeResult = Visit(context.type()); // Esto llamará a VisitTypeIdent
+            MiniCSharpParser.TypeContext typeRuleContext = context.type();
+            object typeResult = Visit(typeRuleContext);
 
-            if (!(typeResult is int resolvedTypeCode))
+            if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
             {
-                // Si VisitTypeIdent no pudo resolver el tipo o devolvió algo inesperado.
-                // VisitTypeIdent ya debería haber reportado un error específico.
-                // No continuamos con la declaración de estas variables si el tipo es inválido.
-                // Reportar un error genérico aquí podría ser redundante si VisitTypeIdent ya lo hizo.
-                // Errors.Add($"Error: Tipo desconocido o inválido en la declaración de variable cerca de '{context.type().GetText()}' en línea {context.type().Start.Line}.");
                 return null;
             }
 
-            if (resolvedTypeCode == TablaSimbolos.UnknownType)
+            ITerminalNode typeNameTerminalNode = typeRuleContext.GetToken(MiniCSharpLexer.ID, 0);
+            // Es buena práctica comprobar si el nodo terminal (y por ende el token) no es null
+            // aunque para un ID en la regla 'type' debería existir.
+            if (typeNameTerminalNode != null && resolvedTypeCode == TablaSimbolos.VoidType && typeNameTerminalNode.Symbol.Text == "void")
             {
-                // VisitTypeIdent ya reportó el error específico.
-                // No declaramos variables con un tipo desconocido.
-                return null;
-            }
-            
-            if (resolvedTypeCode == TablaSimbolos.VoidType && context.type().ID().GetText() == "void")
-            {
-                // No se pueden declarar variables de tipo 'void'.
-                // VisitTypeIdent podría devolver VoidType si el ID es "void".
                 Errors.Add($"Error: No se puede declarar una variable de tipo 'void' ('{context.GetText()}' en línea {context.Start.Line}).");
                 return null;
             }
 
-            // 2. Determinar si es un array.
-            // La regla 'type' es: ID (LBRACK RBRACK)?
-            bool isArray = context.type().LBRACK() != null; //
+            ITerminalNode lbrackNode = typeRuleContext.GetToken(MiniCSharpLexer.LBRACK, 0);
+            bool isArray = lbrackNode != null;
 
-            // 3. Registrar cada identificador (variable) en la tabla de símbolos.
-            // La regla 'varDecl' es: type ID (COMMA ID)* SEMICOLON
-            // context.ID() devuelve una lista de todos los tokens ID.
-            foreach (IToken idToken in context.ID())
+            // GetTokens devuelve IList<ITerminalNode> o ITerminalNode[]
+            // Lo trataremos como IList<ITerminalNode> por consistencia con la API de ANTLR.
+            IList<ITerminalNode> idTerminalNodes = context.GetTokens(MiniCSharpLexer.ID);
+            if (idTerminalNodes != null)
             {
-                string varName = idToken.Text;
+                foreach (ITerminalNode idNode in idTerminalNodes)
+                {
+                    IToken idToken = idNode.Symbol; // Obtener el IToken desde ITerminalNode
+                    string varName = idToken.Text;
 
-                // Verificar si la variable ya ha sido declarada en el ámbito actual.
-                if (symbolTable.BuscarNivelActual(varName) != null)
-                {
-                    Errors.Add($"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
-                }
-                else
-                {
-                    // Insertar la variable en la tabla de símbolos.
-                    symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, context);
-                    // Console.WriteLine($"Checker DBG: Declarada variable '{varName}' de tipo {TablaSimbolos.TypeToString(resolvedTypeCode)}{(isArray ? "[]" : "")} en nivel {symbolTable.NivelActual}");
+                    if (symbolTable.BuscarNivelActual(varName) != null)
+                    {
+                        Errors.Add($"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
+                    }
+                    else
+                    {
+                        symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, context);
+                    }
                 }
             }
-
             return null;
         }
 
         public override object VisitClassDeclaration(MiniCSharpParser.ClassDeclarationContext context)
         {
-            return base.VisitClassDeclaration(context);
+            IToken classToken = context.ID().Symbol; 
+            string className = classToken.Text;
+            
+            if (symbolTable.BuscarNivelActual(className) != null)
+            {
+                Errors.Add($"Error: El identificador '{className}' ya está definido en este ámbito (línea {classToken.Line}). No se puede declarar como clase.");
+                return null;
+            }
+            
+            TablaSimbolos.ClassIdent classIdent = symbolTable.InsertarClass(classToken, context);
+            if (classIdent == null)
+            {
+                Errors.Add($"Error: No se pudo registrar la clase '{className}' (línea {classToken.Line}).");
+                return null;
+            }
+            Console.WriteLine($"Checker DBG: Declarada clase '{className}' en nivel {symbolTable.NivelActual}");
+
+            
+            TablaSimbolos outerSymbolTable = this.symbolTable;
+            this.symbolTable = classIdent.Members; 
+            
+            this.symbolTable.OpenScope(); 
+
+            
+            foreach (var varDeclContext in context.varDecl()) //
+            {
+                Visit(varDeclContext); 
+            }
+
+            
+            Console.WriteLine($"--- Members Symbol Table for Class: {className} ---");
+            this.symbolTable.Imprimir();
+
+            
+            this.symbolTable.CloseScope();
+
+            
+            this.symbolTable = outerSymbolTable;
+
+            return null;
         }
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
-            return base.VisitMethodDeclaration(context);
+            int returnTypeCode;
+            IToken methodNameToken = context.ID().Symbol; 
+
+            if (context.VOID() != null) 
+            {
+                returnTypeCode = TablaSimbolos.VoidType;
+            }
+            else 
+            {
+                MiniCSharpParser.TypeContext returnTypeContext = context.type(); 
+                if (returnTypeContext == null) 
+                {
+                    Errors.Add($"Error: Falta el tipo de retorno para el método '{methodNameToken.Text}' (línea {methodNameToken.Line}).");
+                    return null;
+                }
+
+                object typeResult = Visit(returnTypeContext); 
+                if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
+                {
+                    Errors.Add($"Error: Tipo de retorno inválido o desconocido para el método '{methodNameToken.Text}' (línea {methodNameToken.Line}).");
+                    return null;
+                }
+                returnTypeCode = resolvedTypeCode;
+            }
+
+            if (symbolTable.BuscarNivelActual(methodNameToken.Text) != null)
+            {
+                Errors.Add($"Error: El identificador '{methodNameToken.Text}' ya está definido en este ámbito (línea {methodNameToken.Line}).");
+                return null;
+            }
+
+            TablaSimbolos.MethodIdent methodIdent = symbolTable.InsertarMethod(methodNameToken, returnTypeCode, context);
+            if (methodIdent == null) 
+            {
+                Errors.Add($"Error: No se pudo registrar el método '{methodNameToken.Text}' (línea {methodNameToken.Line}).");
+                return null;
+            }
+            
+            this.currentProcessingMethod = methodIdent;
+            
+            symbolTable.OpenScope();
+            this.currentMethodBodyScopeLevel = symbolTable.NivelActual;
+
+            if (context.formPars() != null)
+            {
+                Visit(context.formPars()); 
+            }
+
+            this.currentProcessingMethod = null;
+
+            Visit(context.block());
+            symbolTable.CloseScope();
+
+            return null;
         }
 
         public override object VisitFormalParams(MiniCSharpParser.FormalParamsContext context)
         {
-            return base.VisitFormalParams(context);
+            MiniCSharpParser.TypeContext[] typeNodes = context.type();     
+            ITerminalNode[] idTerminalNodes = context.ID();                 
+
+            
+            if (idTerminalNodes != null && typeNodes != null && idTerminalNodes.Length == typeNodes.Length)
+            {
+                for (int i = 0; i < idTerminalNodes.Length; i++) 
+                {
+                    MiniCSharpParser.TypeContext typeCtx = typeNodes[i]; 
+                    IToken paramToken = idTerminalNodes[i].Symbol; 
+                    string paramName = paramToken.Text;
+
+                    object typeResult = Visit(typeCtx); 
+                    if (!(typeResult is int paramTypeCode) || paramTypeCode == TablaSimbolos.UnknownType)
+                    {
+                        Errors.Add($"Error: Tipo inválido o desconocido para el parámetro '{paramName}' del método '{this.currentProcessingMethod?.GetName() ?? "actual"}' (línea {paramToken.Line}).");
+                        continue; 
+                    }
+                    if (paramTypeCode == TablaSimbolos.VoidType)
+                    {
+                         Errors.Add($"Error: Un parámetro de método ('{paramName}') no puede ser de tipo 'void' (línea {paramToken.Line}).");
+                         continue;
+                    }
+
+                    bool isArray = typeCtx.GetToken(MiniCSharpLexer.LBRACK, 0) != null; 
+
+                    if (this.currentProcessingMethod != null && this.currentProcessingMethod.Params.Any(p => p.GetName() == paramName))
+                    {
+                        Errors.Add($"Error: Parámetro duplicado '{paramName}' en el método '{this.currentProcessingMethod.GetName()}' (línea {paramToken.Line}).");
+                        continue;
+                    }
+                    
+                    if (this.currentProcessingMethod != null) 
+                    {
+                        symbolTable.InsertarParam(this.currentProcessingMethod, paramToken, paramTypeCode, isArray, typeCtx, this.currentMethodBodyScopeLevel);
+                        Console.WriteLine($"Checker DBG: Declarado Parámetro '{paramName}' de tipo {TablaSimbolos.TypeToString(paramTypeCode)}{(isArray ? "[]" : "")} para método '{this.currentProcessingMethod.GetName()}' en nivel {this.currentMethodBodyScopeLevel}");
+                    }
+                }
+            } else if (idTerminalNodes == null || typeNodes == null || idTerminalNodes.Length != typeNodes.Length)
+            {
+                Errors.Add($"Error: Discrepancia en el número de tipos e identificadores para los parámetros del método '{this.currentProcessingMethod?.GetName() ?? "actual"}' (línea {context.Start.Line}).");
+            }
+            return null;
         }
 
         public override object VisitTypeIdent(MiniCSharpParser.TypeIdentContext context)
         {
-            return base.VisitTypeIdent(context);
+            ITerminalNode typeIdTerminalNode = context.GetToken(MiniCSharpLexer.ID, 0);
+            if (typeIdTerminalNode == null)
+            {
+                Errors.Add($"Error: Falta el nombre del tipo en la declaración (línea {context.Start.Line}).");
+                return TablaSimbolos.UnknownType;
+            }
+
+            IToken typeIdToken = typeIdTerminalNode.Symbol; // Obtener el IToken
+            string typeName = typeIdToken.Text;
+            int typeCode = TablaSimbolos.UnknownType;
+
+            switch (typeName)
+            {
+                case "int": typeCode = TablaSimbolos.IntType; break;
+                case "double": typeCode = TablaSimbolos.DoubleType; break;
+                case "char": typeCode = TablaSimbolos.CharType; break;
+                case "bool": typeCode = TablaSimbolos.BoolType; break;
+                case "string": typeCode = TablaSimbolos.StringType; break;
+                case "void": typeCode = TablaSimbolos.VoidType; break;
+                default:
+                    TablaSimbolos.Ident classIdent = symbolTable.Buscar(typeName);
+                    if (classIdent != null && classIdent is TablaSimbolos.ClassIdent)
+                    {
+                        typeCode = TablaSimbolos.ClassType;
+                    }
+                    else
+                    {
+                        Errors.Add($"Error: Tipo desconocido o no definido '{typeName}' (línea {typeIdToken.Line}).");
+                    }
+                    break;
+            }
+            return typeCode;
         }
 
         public override object VisitDesignatorStatement(MiniCSharpParser.DesignatorStatementContext context)
         {
-            return base.VisitDesignatorStatement(context);
+            object designatorResult = Visit(context.designator());
+
+            if (!(designatorResult is TablaSimbolos.Ident ident))
+            {
+                // VisitDesignatorNode ya debería haber reportado un error si no pudo resolver el designador.
+                // Si designatorResult es null o no es un Ident, no podemos continuar.
+                // Un mensaje de error adicional aquí podría ser redundante si VisitDesignatorNode es completo.
+                // Errors.Add($"Error: El designador '{context.designator().GetText()}' es inválido o no se pudo resolver (línea {context.designator().Start.Line}).");
+                return null;
+            }
+
+            
+            if (context.ASSIGN() != null) 
+            {
+                if (!(ident is TablaSimbolos.VarIdent varIdent)) 
+                {
+                    Errors.Add($"Error: El lado izquierdo de la asignación ('{ident.GetName()}') no es una variable o campo asignable (línea {ident.Token.Line}).");
+                    return null;
+                }
+                // Aquí podrías añadir una verificación para constantes si VarIdent tuviera una bandera 'IsConstant'.
+
+                object exprTypeResult = Visit(context.expr());
+                if (!(exprTypeResult is int exprTypeCode) || exprTypeCode == TablaSimbolos.UnknownType)
+                {
+                    Errors.Add($"Error: La expresión en el lado derecho de la asignación para '{ident.GetName()}' tiene un tipo inválido o desconocido (línea {context.expr().Start.Line}).");
+                    return null;
+                }
+
+                bool typesCompatible = ident.Type == exprTypeCode;
+                if (!typesCompatible)
+                {
+                    if (exprTypeCode == TablaSimbolos.NullType &&
+                        (ident.Type == TablaSimbolos.ClassType ||
+                         ident.Type == TablaSimbolos.StringType ||
+                         (varIdent.IsArray )))
+                    {
+                        typesCompatible = true;
+                    }
+                    // Aquí se podrían añadir más reglas de compatibilidad (ej. int a double).
+                }
+
+                if (!typesCompatible)
+                {
+                    Errors.Add($"Error: Tipos incompatibles en la asignación a '{ident.GetName()}'. Se esperaba '{TablaSimbolos.TypeToString(ident.Type)}' pero se encontró '{TablaSimbolos.TypeToString(exprTypeCode)}' (línea {ident.Token.Line}).");
+                }
+                Console.WriteLine($"Checker DBG: Asignación a '{ident.GetName()}' (tipo {TablaSimbolos.TypeToString(ident.Type)}) con expresión tipo {TablaSimbolos.TypeToString(exprTypeCode)}");
+            }
+            else if (context.LPAREN() != null) 
+            {
+                TablaSimbolos.MethodIdent methodIdent = null;
+
+                if (ident is TablaSimbolos.MethodIdent castedMethodIdent)
+                {
+                    methodIdent = castedMethodIdent;
+                }
+                else
+                {
+                    Errors.Add($"Error: '{ident.GetName()}' no es un método y no puede ser llamado (línea {ident.Token.Line}).");
+                    return null; 
+                }
+
+                List<int> actualParamTypes = new List<int>();
+                if (context.actPars() != null)
+                {
+                    object actParsResult = Visit(context.actPars()); 
+                    if (actParsResult is List<int> types)
+                    {
+                        actualParamTypes = types;
+                    }
+                    // else: VisitActualParams ya debería haber reportado errores si los hubo.
+                }
+
+                
+                if (methodIdent.Params.Count != actualParamTypes.Count)
+                {
+                    Errors.Add($"Error: Número incorrecto de argumentos para el método '{methodIdent.GetName()}'. Se esperaban {methodIdent.Params.Count} pero se encontraron {actualParamTypes.Count} (línea {ident.Token.Line}).");
+                }
+                else
+                {
+                    for (int i = 0; i < methodIdent.Params.Count; i++)
+                    {
+                        if (methodIdent.Params[i].Type != actualParamTypes[i] &&
+                            actualParamTypes[i] != TablaSimbolos.UnknownType) 
+                        {
+                            bool paramCompatible = false;
+                            if (actualParamTypes[i] == TablaSimbolos.NullType &&
+                               (methodIdent.Params[i].Type == TablaSimbolos.ClassType ||
+                                methodIdent.Params[i].Type == TablaSimbolos.StringType ||
+                                methodIdent.Params[i].IsArray)) 
+                            {
+                                paramCompatible = true;
+                            }
+                            // Aquí se podrían añadir más reglas de compatibilidad.
+
+                            if (!paramCompatible)
+                            {
+                                Errors.Add($"Error: Tipo incorrecto para el parámetro {i + 1} ('{methodIdent.Params[i].GetName()}') del método '{methodIdent.GetName()}'. Se esperaba '{TablaSimbolos.TypeToString(methodIdent.Params[i].Type)}' pero se encontró '{TablaSimbolos.TypeToString(actualParamTypes[i])}' (línea {ident.Token.Line}).");
+                            }
+                        }
+                    }
+                }
+                Console.WriteLine($"Checker DBG: Llamada al método '{methodIdent.GetName()}'");
+            }
+            else if (context.INCREMENT() != null || context.DECREMENT() != null) 
+            {
+                if (!(ident is TablaSimbolos.VarIdent)) 
+                {
+                    Errors.Add($"Error: El operando de '++' o '--' debe ser una variable o campo asignable (línea {ident.Token.Line}).");
+                }
+                else if (ident.Type != TablaSimbolos.IntType && ident.Type != TablaSimbolos.DoubleType)
+                {
+                    Errors.Add($"Error: El operando de '++' o '--' ('{ident.GetName()}') debe ser de tipo numérico (int, double), pero es '{TablaSimbolos.TypeToString(ident.Type)}' (línea {ident.Token.Line}).");
+                }
+                Console.WriteLine($"Checker DBG: Operación '{(context.INCREMENT() != null ? "++" : "--")}' sobre '{ident.GetName()}'");
+            }
+
+            return null;
         }
 
         public override object VisitIfStatement(MiniCSharpParser.IfStatementContext context)
@@ -228,14 +499,62 @@ namespace MiniCSharp.Grammar.Checker
             return base.VisitDefaultLabel(context);
         }
 
-        public override object VisitBlockNode(MiniCSharpParser.BlockNodeContext context)
+        public override object VisitBlockNode(MiniCSharpParser.BlockNodeContext context) // Hay que mejorarlo-------------
         {
-            return base.VisitBlockNode(context);
+            // Un bloque puede o no necesitar siempre un nuevo ámbito léxico separado
+            // si el método ya abrió uno. Pero para declaraciones locales dentro de un bloque
+            // que no sea directamente el cuerpo del método, sí lo necesitaría.
+            // Por ahora, para el cuerpo de un método, el ámbito ya fue abierto por VisitMethodDeclaration.
+            // Si este bloque es anidado (ej. dentro de un if), sí abriríamos uno nuevo.
+            // Por simplicidad, si este VisitBlockNode es llamado DIRECTAMENTE por VisitMethodDeclaration,
+            // el ámbito ya está configurado. Si es llamado por un if/while/for, debería abrir/cerrar.
+            // Asumamos que el ámbito del método ya está abierto.
+
+            // Vamos a hacerlo simple: si un bloque puede declarar variables, debe tener su propio ámbito.
+            bool isMethodBodyBlock = context.Parent is MiniCSharpParser.MethodDeclarationContext;
+            if (!isMethodBodyBlock) // Solo abrir nuevo ámbito si no es el bloque principal del método
+            {                     // (que ya tiene un ámbito abierto por VisitMethodDeclaration)
+                symbolTable.OpenScope();
+            }
+
+            if (context.children != null) {
+                foreach (var child in context.children) {
+                    // La regla 'block' es: LBRACE (varDecl | statement)* RBRACE
+                    // Así que los hijos relevantes son varDecl o statement
+                    if (child is MiniCSharpParser.VarDeclarationContext ||
+                        child is MiniCSharpParser.StatementContext) {
+                        Visit(child);
+                    }
+                }
+            }
+
+            if (!isMethodBodyBlock)
+            {
+                symbolTable.CloseScope();
+            }
+            return null;
         }
 
         public override object VisitActualParams(MiniCSharpParser.ActualParamsContext context)
         {
-            return base.VisitActualParams(context);
+            List<int> paramTypes = new List<int>();
+            if (context.expr() != null) 
+            {
+                foreach (var exprContext in context.expr())
+                {
+                    object exprTypeResult = Visit(exprContext); 
+                    if (exprTypeResult is int exprTypeCode)
+                    {
+                        paramTypes.Add(exprTypeCode);
+                    }
+                    else
+                    {
+                        Errors.Add($"Error: No se pudo determinar el tipo de un argumento en la llamada a método (línea {exprContext.Start.Line}).");
+                        paramTypes.Add(TablaSimbolos.UnknownType); 
+                    }
+                }
+            }
+            return paramTypes;
         }
 
         public override object VisitConditionNode(MiniCSharpParser.ConditionNodeContext context)
@@ -320,7 +639,33 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-            return base.VisitDesignatorNode(context);
+            IToken firstIdToken = context.ID(0)?.Symbol; 
+            // O context.GetToken(MiniCSharpLexer.ID, 0)?.Symbol;
+
+            if (firstIdToken == null) {
+                Errors.Add($"Error: Designador inválido o vacío (línea {context.Start.Line}).");
+                return null;
+            }
+
+            TablaSimbolos.Ident ident = symbolTable.Buscar(firstIdToken.Text);
+
+            if (ident == null) {
+                Errors.Add($"Error: El identificador '{firstIdToken.Text}' no ha sido declarado (línea {firstIdToken.Line}).");
+                return null; 
+            }
+
+            // TODO: Si hay context.DOT() o context.LBRACK(), procesar el resto del designador.
+            // Por ejemplo, si hay DOT ID:
+            // if (context.DOT().Count > 0 && ident is TablaSimbolos.ClassIdent classIdent) {
+            //     TablaSimbolos outerTable = this.symbolTable;
+            //     this.symbolTable = classIdent.Members;
+            //     // ... buscar el siguiente ID en this.symbolTable (tabla de miembros) ...
+            //     // Esto se vuelve recursivo o iterativo.
+            //     this.symbolTable = outerTable;
+            // }
+            // Similar para LBRACK expr RBRACK (acceso a array).
+
+            return ident; // Devuelve el 'Ident' del primer ID por ahora.
         }
 
         public override object VisitRelationalOp(MiniCSharpParser.RelationalOpContext context)

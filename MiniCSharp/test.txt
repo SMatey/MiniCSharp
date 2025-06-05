@@ -1,11 +1,63 @@
-// test.txt
-
-using System;
-using System.Collections.Generic;
-using MyOrg.MyNamespace.MyUtils; // Un ejemplo más complejo
-
-class MyTestProgram
+// test.txt - Prueba de DesignatorStatement
+class DSTestProgram
 {
-    // Puedes añadir declaraciones aquí si quieres probar otras cosas,
-    // pero para 'using' esto es suficiente.
+    int g_int;
+    string g_str;
+    bool g_bool;
+    double g_double;
+    int[] g_arr_int; // Declaramos un array para futuras pruebas de designador
+
+    void SimpleMethod() 
+    {
+        // Cuerpo vacío
+    }
+
+    int MethodWithParams(int p_val, string p_name)
+    {
+        // int r; r = p_val; return r; // Cuerpo no analizado aún
+    }
+
+    // Método principal para realizar las pruebas de sentencias
+    void ExecuteTests()
+    {
+        int local_int;
+        string local_str;
+        bool local_bool;
+
+        // --- 1. Pruebas de Asignación (designator = expr) ---
+        g_int = 10;                     // Válido (asume VisitIntLitFactor funciona)
+        local_int = g_int;              // Válido (asume VisitDesignatorNode(g_int) devuelve tipo int)
+        
+        g_str = "test";                 // Válido (asume VisitStringLitFactor funciona)
+        local_str = g_str;              // Válido
+        
+        g_int = g_str;                  // ERROR: Tipos incompatibles (int = string)
+        
+        g_str = null;                   // Válido (string es tipo referencia)
+        // g_int = null;                // ERROR: No se puede asignar null a int (si lo pruebas)
+        g_bool = true;                  // Válido
+
+
+        // --- 2. Pruebas de Llamada a Método (designator (...)) ---
+        SimpleMethod();                 // Válido
+
+        // Asumimos que VisitIntLitFactor y VisitStringLitFactor devuelven los tipos correctos
+        // y VisitActualParams los recolecta.
+        MethodWithParams(100, "param2"); // Válido
+        
+        MethodWithParams(50);           // ERROR: Número incorrecto de argumentos
+        MethodWithParams("bad", 200);   // ERROR: Tipos de argumentos incorrectos (string, int) en lugar de (int, string)
+
+        g_int();                        // ERROR: 'g_int' no es un método.
+
+
+        // --- 3. Pruebas de Incremento/Decremento (designator++ o designator--) ---
+        g_int++;                        // Válido
+        local_int--;                    // Válido
+        g_double++;                     // Válido
+
+        g_str++;                        // ERROR: Operando para '++' debe ser numérico (int, double)
+        // SimpleMethod++;              // ERROR: Operando para '++' debe ser variable/campo asignable
+                                        // (VisitDesignatorNode devolvería MethodIdent, lo que fallaría la comprobación de VarIdent)
+    }
 }
