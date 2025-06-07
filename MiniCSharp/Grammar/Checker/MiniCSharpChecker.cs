@@ -572,7 +572,7 @@ namespace MiniCSharp.Grammar.Checker
             return base.VisitConditionFactNode(context);
         }
 
-        public override object VisitExpression(MiniCSharpParser.ExpressionContext context)
+        public override object VisitExpression(MiniCSharpParser.ExpressionContext context) //--------Matey
         {
             return base.VisitExpression(context);
         }
@@ -582,47 +582,47 @@ namespace MiniCSharp.Grammar.Checker
             return base.VisitTypeCast(context);
         }
 
-        public override object VisitTermNode(MiniCSharpParser.TermNodeContext context)
+        public override object VisitTermNode(MiniCSharpParser.TermNodeContext context) //--------Matey
         {
             return base.VisitTermNode(context);
         }
 
-        public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context)
+        public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context) //---------Matey
         {
             return base.VisitDesignatorFactor(context);
         }
 
-        public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context)
+        public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context) // ----Matey
         {
             return base.VisitIntLitFactor(context);
         }
 
-        public override object VisitDoubleLitFactor(MiniCSharpParser.DoubleLitFactorContext context)
+        public override object VisitDoubleLitFactor(MiniCSharpParser.DoubleLitFactorContext context) // ----Matey
         {
             return base.VisitDoubleLitFactor(context);
         }
 
-        public override object VisitCharLitFactor(MiniCSharpParser.CharLitFactorContext context)
+        public override object VisitCharLitFactor(MiniCSharpParser.CharLitFactorContext context)// ----Matey
         {
             return base.VisitCharLitFactor(context);
         }
 
-        public override object VisitStringLitFactor(MiniCSharpParser.StringLitFactorContext context)
+        public override object VisitStringLitFactor(MiniCSharpParser.StringLitFactorContext context)// ----Matey
         {
             return base.VisitStringLitFactor(context);
         }
 
-        public override object VisitTrueLitFactor(MiniCSharpParser.TrueLitFactorContext context)
+        public override object VisitTrueLitFactor(MiniCSharpParser.TrueLitFactorContext context)// ----Matey
         {
             return base.VisitTrueLitFactor(context);
         }
 
-        public override object VisitFalseLitFactor(MiniCSharpParser.FalseLitFactorContext context)
+        public override object VisitFalseLitFactor(MiniCSharpParser.FalseLitFactorContext context)// ----Matey
         {
             return base.VisitFalseLitFactor(context);
         }
 
-        public override object VisitNullLitFactor(MiniCSharpParser.NullLitFactorContext context)
+        public override object VisitNullLitFactor(MiniCSharpParser.NullLitFactorContext context)// ----Matey
         {
             return base.VisitNullLitFactor(context);
         }
@@ -632,7 +632,7 @@ namespace MiniCSharp.Grammar.Checker
             return base.VisitNewObjectFactor(context);
         }
 
-        public override object VisitParenExpressionFactor(MiniCSharpParser.ParenExpressionFactorContext context)
+        public override object VisitParenExpressionFactor(MiniCSharpParser.ParenExpressionFactorContext context) //-------Matey
         {
             return base.VisitParenExpressionFactor(context);
         }
