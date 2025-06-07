@@ -501,15 +501,6 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitBlockNode(MiniCSharpParser.BlockNodeContext context) // Hay que mejorarlo-------------
         {
-            // Un bloque puede o no necesitar siempre un nuevo ámbito léxico separado
-            // si el método ya abrió uno. Pero para declaraciones locales dentro de un bloque
-            // que no sea directamente el cuerpo del método, sí lo necesitaría.
-            // Por ahora, para el cuerpo de un método, el ámbito ya fue abierto por VisitMethodDeclaration.
-            // Si este bloque es anidado (ej. dentro de un if), sí abriríamos uno nuevo.
-            // Por simplicidad, si este VisitBlockNode es llamado DIRECTAMENTE por VisitMethodDeclaration,
-            // el ámbito ya está configurado. Si es llamado por un if/while/for, debería abrir/cerrar.
-            // Asumamos que el ámbito del método ya está abierto.
-
             // Vamos a hacerlo simple: si un bloque puede declarar variables, debe tener su propio ámbito.
             bool isMethodBodyBlock = context.Parent is MiniCSharpParser.MethodDeclarationContext;
             if (!isMethodBodyBlock) // Solo abrir nuevo ámbito si no es el bloque principal del método
@@ -574,7 +565,84 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitExpression(MiniCSharpParser.ExpressionContext context) //--------Matey
         {
-            return base.VisitExpression(context);
+            // 1. Obtener el tipo del primer término.
+            object initialTypeResult = Visit(context.term(0));
+
+            if (!(initialTypeResult is int currentTypeCode) || currentTypeCode == TablaSimbolos.UnknownType)
+            {
+                // VisitTermNode ya debería haber reportado el error específico.
+                Errors.Add($"Error: La expresión contiene un término con tipo inválido o desconocido (línea {context.term(0).Start.Line}).");
+                return TablaSimbolos.UnknownType;
+            }
+
+            // 2. Manejar el operador unario opcional (+ o -) al inicio de la expresión.
+            if (context.ADDOP().Length > context.term().Length - 1) 
+            {
+                IToken unaryOp = context.ADDOP(0).Symbol;
+                if (unaryOp.Text == "-")
+                {
+                    // El operador unario '-' solo se puede aplicar a tipos numéricos.
+                    if (currentTypeCode != TablaSimbolos.IntType && currentTypeCode != TablaSimbolos.DoubleType)
+                    {
+                        Errors.Add($"Error: El operador unario '-' no se puede aplicar a un operando de tipo '{TablaSimbolos.TypeToString(currentTypeCode)}' (línea {unaryOp.Line}).");
+                        return TablaSimbolos.UnknownType;
+                    }
+                }
+            }
+
+            // 3. Procesar el resto de la expresión: (ADDOP term)*
+            int binaryOpCount = context.term().Length - 1;
+            for (int i = 0; i < binaryOpCount; i++)
+            {
+                // Determinar el operador (+ o -)
+                int opIndex = (context.ADDOP().Length > binaryOpCount) ? i + 1 : i;
+                IToken op = context.ADDOP(opIndex).Symbol;
+
+                // Obtener el tipo del siguiente término
+                object nextTermTypeResult = Visit(context.term(i + 1));
+                if (!(nextTermTypeResult is int nextTermTypeCode) || nextTermTypeCode == TablaSimbolos.UnknownType)
+                {
+                    Errors.Add($"Error: La expresión contiene un término con tipo inválido o desconocido (línea {context.term(i + 1).Start.Line}).");
+                    return TablaSimbolos.UnknownType;
+                }
+
+                // 4. Verificar la compatibilidad de tipos para la operación
+                if (op.Text == "+")
+                {
+                    // Reglas para la suma:
+                    // int + int = int
+                    // double + double = double
+                    // string + string = string (concatenación)
+                    // (podrían añadirse más, como int + double = double)
+                    if (currentTypeCode == TablaSimbolos.IntType && nextTermTypeCode == TablaSimbolos.IntType)
+                        currentTypeCode = TablaSimbolos.IntType;
+                    else if (currentTypeCode == TablaSimbolos.DoubleType && nextTermTypeCode == TablaSimbolos.DoubleType)
+                        currentTypeCode = TablaSimbolos.DoubleType;
+                    else if (currentTypeCode == TablaSimbolos.StringType && nextTermTypeCode == TablaSimbolos.StringType)
+                        currentTypeCode = TablaSimbolos.StringType;
+                    else
+                    {
+                        Errors.Add($"Error: El operador '+' no se puede aplicar a operandos de tipo '{TablaSimbolos.TypeToString(currentTypeCode)}' y '{TablaSimbolos.TypeToString(nextTermTypeCode)}' (línea {op.Line}).");
+                        return TablaSimbolos.UnknownType;
+                    }
+                }
+                else if (op.Text == "-")
+                {
+                    // Reglas para la resta: solo numéricos
+                    if (currentTypeCode == TablaSimbolos.IntType && nextTermTypeCode == TablaSimbolos.IntType)
+                        currentTypeCode = TablaSimbolos.IntType;
+                    else if (currentTypeCode == TablaSimbolos.DoubleType && nextTermTypeCode == TablaSimbolos.DoubleType)
+                        currentTypeCode = TablaSimbolos.DoubleType;
+                    else
+                    {
+                        Errors.Add($"Error: El operador '-' no se puede aplicar a operandos de tipo '{TablaSimbolos.TypeToString(currentTypeCode)}' y '{TablaSimbolos.TypeToString(nextTermTypeCode)}' (línea {op.Line}).");
+                        return TablaSimbolos.UnknownType;
+                    }
+                }
+            }
+
+            // El tipo resultante de la expresión completa es el valor final de currentTypeCode.
+            return currentTypeCode;
         }
 
         public override object VisitTypeCast(MiniCSharpParser.TypeCastContext context)
@@ -584,52 +652,215 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitTermNode(MiniCSharpParser.TermNodeContext context) //--------Matey
         {
-            return base.VisitTermNode(context);
+            // 1. Obtener el tipo del primer factor.
+            object initialTypeResult = Visit(context.factor(0));
+
+            if (!(initialTypeResult is int currentTypeCode) || currentTypeCode == TablaSimbolos.UnknownType)
+            {
+                Errors.Add($"Error: La expresión contiene un factor con tipo inválido o desconocido (línea {context.factor(0).Start.Line}).");
+                return TablaSimbolos.UnknownType;
+            }
+
+            // 2. Procesar el resto del término: (mulop factor)*
+            int operatorCount = context.factor().Length - 1;
+            for (int i = 0; i < operatorCount; i++)
+            {
+                object nextFactorTypeResult = Visit(context.factor(i + 1));
+                if (!(nextFactorTypeResult is int nextFactorTypeCode) || nextFactorTypeCode == TablaSimbolos.UnknownType)
+                {
+                    Errors.Add($"Error: La expresión contiene un factor con tipo inválido o desconocido (línea {context.factor(i + 1).Start.Line}).");
+                    return TablaSimbolos.UnknownType;
+                }
+                
+                IToken op = context.MULOP(i).Symbol;
+
+                // 3. Verificar la compatibilidad de tipos para la operación
+                switch (op.Text)
+                {
+                    case "*":
+                    case "/":
+                        // Reglas para '*' y '/': solo numéricos
+                        if ((currentTypeCode == TablaSimbolos.IntType || currentTypeCode == TablaSimbolos.DoubleType) &&
+                            (nextFactorTypeCode == TablaSimbolos.IntType || nextFactorTypeCode == TablaSimbolos.DoubleType))
+                        {
+                            // Promoción de tipo: si alguno es double, el resultado es double.
+                            if (currentTypeCode == TablaSimbolos.DoubleType || nextFactorTypeCode == TablaSimbolos.DoubleType)
+                            {
+                                currentTypeCode = TablaSimbolos.DoubleType;
+                            }
+                            else
+                            {
+                                currentTypeCode = TablaSimbolos.IntType;
+                            }
+                        }
+                        else
+                        {
+                            Errors.Add($"Error: El operador '{op.Text}' no se puede aplicar a operandos de tipo '{TablaSimbolos.TypeToString(currentTypeCode)}' y '{TablaSimbolos.TypeToString(nextFactorTypeCode)}' (línea {op.Line}).");
+                            return TablaSimbolos.UnknownType;
+                        }
+                        break;
+
+                    case "%":
+                        // Regla para '%': solo enteros
+                        if (currentTypeCode == TablaSimbolos.IntType && nextFactorTypeCode == TablaSimbolos.IntType)
+                        {
+                            currentTypeCode = TablaSimbolos.IntType;
+                        }
+                        else
+                        {
+                            Errors.Add($"Error: El operador '%' solo se puede aplicar a operandos de tipo 'int', pero se usaron '{TablaSimbolos.TypeToString(currentTypeCode)}' y '{TablaSimbolos.TypeToString(nextFactorTypeCode)}' (línea {op.Line}).");
+                            return TablaSimbolos.UnknownType;
+                        }
+                        break;
+                }
+            }
+
+            return currentTypeCode;
         }
 
         public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context) //---------Matey
         {
-            return base.VisitDesignatorFactor(context);
+            // Primero, visitamos el designator para saber a qué identificador se refiere.
+            object designatorResult = Visit(context.designator());
+
+            if (!(designatorResult is TablaSimbolos.Ident ident))
+            {
+                // Si el designador no se pudo resolver, el error ya fue reportado por VisitDesignatorNode.
+                return TablaSimbolos.UnknownType;
+            }
+
+            // Ahora, diferenciamos los dos casos de la regla 'factor'.
+            // Caso 1: Es una llamada a método (designator seguido de '(').
+            if (context.LPAREN() != null)
+            {
+                // Si hay un '(', el designador DEBE ser un método.
+                if (!(ident is TablaSimbolos.MethodIdent methodIdent))
+                {
+                    Errors.Add($"Error: '{ident.GetName()}' no es un método y no puede ser usado en una expresión de llamada (línea {ident.Token.Line}).");
+                    return TablaSimbolos.UnknownType;
+                }
+
+                // Un método que devuelve 'void' no puede ser usado como parte de una expresión.
+                if (methodIdent.ReturnType == TablaSimbolos.VoidType)
+                {
+                    Errors.Add($"Error: El método '{methodIdent.GetName()}' es de tipo 'void' y su llamada no puede ser usada como un valor en una expresión (línea {ident.Token.Line}).");
+                    return TablaSimbolos.UnknownType;
+                }
+
+                // Verificar los parámetros de la llamada. Reutilizamos la lógica que ya tenemos en VisitDesignatorStatement.
+                List<int> actualParamTypes = new List<int>();
+                if (context.actPars() != null)
+                {
+                    object actParsResult = Visit(context.actPars());
+                    if (actParsResult is List<int> types)
+                    {
+                        actualParamTypes = types;
+                    }
+                }
+                
+                // Verificar que el número y tipo de los parámetros coincidan.
+                if (methodIdent.Params.Count != actualParamTypes.Count)
+                {
+                    Errors.Add($"Error: Número incorrecto de argumentos para el método '{methodIdent.GetName()}'. Se esperaban {methodIdent.Params.Count} pero se encontraron {actualParamTypes.Count} (línea {ident.Token.Line}).");
+                    return TablaSimbolos.UnknownType;
+                }
+                else
+                {
+                    // Verificar tipos (simplificado, puedes añadir más reglas de compatibilidad)
+                    for (int i = 0; i < methodIdent.Params.Count; i++)
+                    {
+                        if (methodIdent.Params[i].Type != actualParamTypes[i] && actualParamTypes[i] != TablaSimbolos.UnknownType)
+                        {
+                             Errors.Add($"Error: Tipo incorrecto para el parámetro {i + 1} del método '{methodIdent.GetName()}'. Se esperaba '{TablaSimbolos.TypeToString(methodIdent.Params[i].Type)}' pero se encontró '{TablaSimbolos.TypeToString(actualParamTypes[i])}' (línea {ident.Token.Line}).");
+                             // Podríamos devolver UnknownType aquí también si un parámetro es incorrecto
+                        }
+                    }
+                }
+
+                // Si todo está bien, el tipo de este factor es el tipo de retorno del método.
+                return methodIdent.ReturnType;
+            }
+            // Caso 2: Es una variable o campo (solo 'designator').
+            else
+            {
+                // Si no hay '(', el designador DEBE ser una variable/campo. No puede ser un método o una clase.
+                if (!(ident is TablaSimbolos.VarIdent)) 
+                {
+                    Errors.Add($"Error: El identificador '{ident.GetName()}' no es una variable/campo y no puede ser usado como un valor en una expresión (línea {ident.Token.Line}).");
+                    return TablaSimbolos.UnknownType;
+                }
+                
+                // El tipo de este factor es el tipo de la variable/campo.
+                return ident.Type;
+            }
         }
 
         public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context) // ----Matey
         {
-            return base.VisitIntLitFactor(context);
+            // Un IntLitFactor siempre representa un valor de tipo 'int'.
+            // Devolvemos el código de tipo correspondiente desde nuestra TablaSimbolos.
+            return TablaSimbolos.IntType;
         }
 
         public override object VisitDoubleLitFactor(MiniCSharpParser.DoubleLitFactorContext context) // ----Matey
         {
-            return base.VisitDoubleLitFactor(context);
+            // Un DoubleLitFactor siempre representa un valor de tipo 'double'.
+            // Devolvemos el código de tipo correspondiente.
+            return TablaSimbolos.DoubleType;
         }
 
         public override object VisitCharLitFactor(MiniCSharpParser.CharLitFactorContext context)// ----Matey
         {
-            return base.VisitCharLitFactor(context);
+            // Un CharLitFactor siempre representa un valor de tipo 'char'.
+            // Devolvemos el código de tipo correspondiente.
+            return TablaSimbolos.CharType;
         }
 
         public override object VisitStringLitFactor(MiniCSharpParser.StringLitFactorContext context)// ----Matey
         {
-            return base.VisitStringLitFactor(context);
+            // Un stringLitFactor siempre representa un valor de tipo 'string'.
+            // Devolvemos el código de tipo correspondiente.
+            return TablaSimbolos.StringType;
         }
 
         public override object VisitTrueLitFactor(MiniCSharpParser.TrueLitFactorContext context)// ----Matey
         {
-            return base.VisitTrueLitFactor(context);
+            // Un TrueLitFactor siempre representa un valor de tipo 'Bool'.
+            // Devolvemos el código de tipo correspondiente.
+            return TablaSimbolos.BoolType;
         }
 
         public override object VisitFalseLitFactor(MiniCSharpParser.FalseLitFactorContext context)// ----Matey
         {
-            return base.VisitFalseLitFactor(context);
+            // Un FalseLitFactor siempre representa un valor de tipo 'Bool'.
+            // Devolvemos el código de tipo correspondiente.
+            return TablaSimbolos.BoolType;
         }
 
         public override object VisitNullLitFactor(MiniCSharpParser.NullLitFactorContext context)// ----Matey
         {
-            return base.VisitNullLitFactor(context);
+            // Un NullLitFactor siempre representa un valor de tipo 'Null'.
+            // Devolvemos el código de tipo correspondiente.
+            return TablaSimbolos.NullType;
         }
 
         public override object VisitNewObjectFactor(MiniCSharpParser.NewObjectFactorContext context)
         {
-            return base.VisitNewObjectFactor(context);
+            // La regla es: NEW ID ( (LBRACK RBRACK) )? # NewObjectFactor
+            // Por ahora, solo manejaremos la creación de clases (NEW ID)
+            string className = context.ID().GetText();
+            TablaSimbolos.Ident classIdent = symbolTable.Buscar(className);
+
+            if (classIdent != null && classIdent is TablaSimbolos.ClassIdent)
+            {
+                // La expresión 'new MiClase()' tiene como tipo 'MiClase'.
+                // Devolvemos el tipo genérico ClassType por ahora.
+                // En un sistema más avanzado, podríamos devolver una referencia al ClassIdent mismo.
+                return TablaSimbolos.ClassType;
+            }
+    
+            Errors.Add($"Error: No se puede crear una instancia del tipo '{className}' porque no es una clase definida (línea {context.ID().Symbol.Line}).");
+            return TablaSimbolos.UnknownType;
         }
 
         public override object VisitParenExpressionFactor(MiniCSharpParser.ParenExpressionFactorContext context) //-------Matey

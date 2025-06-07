@@ -1,63 +1,43 @@
-// test.txt - Prueba de DesignatorStatement
-class DSTestProgram
+// test.txt - Versión Verificada y Limpia
+class IntegrationTestProgram
 {
+    // --- Declaraciones Globales ---
     int g_int;
-    string g_str;
-    bool g_bool;
     double g_double;
-    int[] g_arr_int; // Declaramos un array para futuras pruebas de designador
+    string g_str;
 
-    void SimpleMethod() 
-    {
-        // Cuerpo vacío
+    class Point {
+        int x;
+        int y;
     }
 
-    int MethodWithParams(int p_val, string p_name)
+    Point g_point;
+
+    // --- Declaraciones de Métodos ---
+    void SetValues(int val, string name)
     {
-        // int r; r = p_val; return r; // Cuerpo no analizado aún
+        g_int = val;
+        g_str = name;
     }
 
-    // Método principal para realizar las pruebas de sentencias
-    void ExecuteTests()
+    int GetIntValue()
+    {
+    }
+
+    // --- Método Principal de Prueba ---
+    void Main() 
     {
         int local_int;
-        string local_str;
-        bool local_bool;
+        Point local_point;
 
-        // --- 1. Pruebas de Asignación (designator = expr) ---
-        g_int = 10;                     // Válido (asume VisitIntLitFactor funciona)
-        local_int = g_int;              // Válido (asume VisitDesignatorNode(g_int) devuelve tipo int)
-        
-        g_str = "test";                 // Válido (asume VisitStringLitFactor funciona)
-        local_str = g_str;              // Válido
-        
-        g_int = g_str;                  // ERROR: Tipos incompatibles (int = string)
-        
-        g_str = null;                   // Válido (string es tipo referencia)
-        // g_int = null;                // ERROR: No se puede asignar null a int (si lo pruebas)
-        g_bool = true;                  // Válido
-
-
-        // --- 2. Pruebas de Llamada a Método (designator (...)) ---
-        SimpleMethod();                 // Válido
-
-        // Asumimos que VisitIntLitFactor y VisitStringLitFactor devuelven los tipos correctos
-        // y VisitActualParams los recolecta.
-        MethodWithParams(100, "param2"); // Válido
-        
-        MethodWithParams(50);           // ERROR: Número incorrecto de argumentos
-        MethodWithParams("bad", 200);   // ERROR: Tipos de argumentos incorrectos (string, int) en lugar de (int, string)
-
-        g_int();                        // ERROR: 'g_int' no es un método.
-
-
-        // --- 3. Pruebas de Incremento/Decremento (designator++ o designator--) ---
-        g_int++;                        // Válido
-        local_int--;                    // Válido
-        g_double++;                     // Válido
-
-        g_str++;                        // ERROR: Operando para '++' debe ser numérico (int, double)
-        // SimpleMethod++;              // ERROR: Operando para '++' debe ser variable/campo asignable
-                                        // (VisitDesignatorNode devolvería MethodIdent, lo que fallaría la comprobación de VarIdent)
+        // --- Pruebas Válidas ---
+        local_int = 10 * 2 + 5;
+        g_double = local_int * 3.14;
+        SetValues(100, "Test Name");
+        GetIntValue();
+        local_int = GetIntValue();
+        local_point = new Point();
+        g_point = null;
+        local_int++;
     }
 }
