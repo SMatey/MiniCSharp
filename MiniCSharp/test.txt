@@ -1,43 +1,47 @@
-// test.txt - Versión Verificada y Limpia
-class IntegrationTestProgram
+// test.txt - Segunda Prueba con Errores Semánticos
+class SecondErrorTestProgram
 {
-    // --- Declaraciones Globales ---
-    int g_int;
-    double g_double;
-    string g_str;
+    // --- Declaraciones ---
+    int my_int;
+    bool my_bool;
+    int[] my_array;
 
-    class Point {
-        int x;
-        int y;
+    class Point { int p; }
+    Point my_point;
+
+    void VoidMethod() {}
+    void MethodWithIntParam(int val) {}
+
+    // --- Método de Prueba ---
+    void Main()
+    {
+        // ERROR 1: Usar un método 'void' en una expresión de asignación.
+        // 'VoidMethod' devuelve void, no puede ser asignado a un int.
+        my_int = VoidMethod(); 
+
+        // ERROR 2: Tipos incompatibles en una expresión aritmética.
+        // No se puede sumar un 'int' con un 'bool'.
+        my_int = 10 + my_bool; 
+
+        // ERROR 3: Asignar 'null' a un tipo por valor (int).
+        // 'null' solo es compatible con tipos referencia (clases, strings, arrays).
+        my_int = null;
+
+        // ERROR 4: Llamar a una función que no ha sido declarada.
+        // 'len' es una función predefinida según las especificaciones,
+        // pero aún no la hemos añadido a la tabla de símbolos.
+        my_int = len(my_array); 
+
+        // ERROR 5: Pasar un tipo de clase como parámetro donde se espera un tipo primitivo.
+        MethodWithIntParam(my_point);
+
+        // ERROR 6: Usar el nombre de una clase como si fuera una variable.
+        int Point; 
     }
 
-    Point g_point;
-
-    // --- Declaraciones de Métodos ---
-    void SetValues(int val, string name)
+    // ERROR 7: Redeclarar un parámetro como una variable local dentro de un método.
+    void ParamRedeclarationTest(int p)
     {
-        g_int = val;
-        g_str = name;
-    }
-
-    int GetIntValue()
-    {
-    }
-
-    // --- Método Principal de Prueba ---
-    void Main() 
-    {
-        int local_int;
-        Point local_point;
-
-        // --- Pruebas Válidas ---
-        local_int = 10 * 2 + 5;
-        g_double = local_int * 3.14;
-        SetValues(100, "Test Name");
-        GetIntValue();
-        local_int = GetIntValue();
-        local_point = new Point();
-        g_point = null;
-        local_int++;
+        double p; // 'p' ya existe en este ámbito como parámetro.
     }
 }

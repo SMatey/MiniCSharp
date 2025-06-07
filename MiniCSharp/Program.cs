@@ -52,20 +52,11 @@ namespace MiniCSharp // O el namespace principal de tu proyecto
                 }
 
                 Console.WriteLine("Análisis sintáctico completado sin errores.");
-                // Opcional: Mostrar el árbol si necesitas depurar la estructura
-                // Console.WriteLine("Árbol Sintáctico:");
-                // Console.WriteLine(tree.ToStringTree(parser));
                 
                 Console.WriteLine("\nIniciando análisis semántico (Checker)...");
 
                 // Crear una instancia del Checker
                 MiniCsharpChecker checker = new MiniCsharpChecker();
-                
-                // Ejecutar el Checker visitando el árbol desde la raíz 'program'
-                // El método Visit de la clase base del visitor (AbstractParseTreeVisitor)
-                // se encargará de despachar al VisitProg(ProgContext) si el objeto 'tree'
-                // es en realidad una instancia de ProgContext (que debería serlo, dado que
-                // #Prog es la única alternativa para la regla 'program').
                 checker.Visit(tree); 
 
                 // Verificar si el Checker reportó errores semánticos

@@ -105,7 +105,7 @@ namespace MiniCSharp.Grammar.Checker
                     IToken idToken = idNode.Symbol; // Obtener el IToken desde ITerminalNode
                     string varName = idToken.Text;
 
-                    if (symbolTable.BuscarNivelActual(varName) != null)
+                    if (symbolTable.Buscar(varName) != null && symbolTable.BuscarNivelActual(varName) != null)
                     {
                         Errors.Add($"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
                     }

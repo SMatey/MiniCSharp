@@ -96,8 +96,7 @@ factor
     | TRUE                                 # TrueLitFactor
     | FALSE                                # FalseLitFactor
     | NULL                                 # NullLitFactor
-    | NEW ID ( (LBRACK RBRACK)             
-             )?                            # NewObjectFactor 
+    | NEW ID ( LPAREN actPars? RPAREN )?   # NewObjectFactor 
     | LPAREN expr RPAREN                   # ParenExpressionFactor
     ;
 
