@@ -1,4 +1,4 @@
-// test.txt – Pruebas Semánticas y de Designadores
+// test.txt - Segunda Prueba con Errores Semánticos
 class SecondErrorTestProgram
 {
     // --- Declaraciones ---
@@ -16,45 +16,27 @@ class SecondErrorTestProgram
     void Main()
     {
         // ERROR 1: Usar un método 'void' en una expresión de asignación.
-        my_int = VoidMethod();
+        // 'VoidMethod' devuelve void, no puede ser asignado a un int.
+        my_int = VoidMethod(); 
 
         // ERROR 2: Tipos incompatibles en una expresión aritmética.
-        my_int = 10 + my_bool;
+        // No se puede sumar un 'int' con un 'bool'.
+        my_int = 10 + my_bool; 
 
         // ERROR 3: Asignar 'null' a un tipo por valor (int).
+        // 'null' solo es compatible con tipos referencia (clases, strings, arrays).
         my_int = null;
 
         // ERROR 4: Llamar a una función que no ha sido declarada.
-        my_int = len(my_array);
+        // 'len' es una función predefinida según las especificaciones,
+        // pero aún no la hemos añadido a la tabla de símbolos.
+        my_int = len(my_array); 
 
         // ERROR 5: Pasar un tipo de clase como parámetro donde se espera un tipo primitivo.
         MethodWithIntParam(my_point);
 
         // ERROR 6: Usar el nombre de una clase como si fuera una variable.
-        int Point;
-
-        //  Pruebas de VisitDesignatorNode:
-
-        // PRUEBA D1: Acceso a campo válido en objeto de clase.
-        my_point.p = 5;
-
-        // PRUEBA D2: Acceso a campo inexistente en objeto de clase.
-        my_point.nonexistent = 1;
-
-        // PRUEBA D3: Acceso a campo sobre variable primitiva.
-        my_int.someField = 2;
-
-        // PRUEBA D4: Acceso válido a posición de array.
-        my_array[3] = 7;
-
-        // PRUEBA D5: Índice de array no entero.
-        my_array[true] = 8;
-
-        // PRUEBA D6: Acceso a campo tras indexar array de primitivos.
-        my_array[0].p = 9;
-
-        // PRUEBA D7: Intento de indexar variable no-array.
-        my_bool[0] = false;
+        int Point; 
     }
 
     // ERROR 7: Redeclarar un parámetro como una variable local dentro de un método.
