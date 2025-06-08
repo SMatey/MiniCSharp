@@ -57,35 +57,6 @@ namespace MiniCSharp.Grammar.Checker
             {
                 Visit(decl);
             }
-            symbolTable.OpenScope(); 
-
-            foreach (var usingDirContext in context.usingDirective())
-            {
-                Visit(usingDirContext); 
-            }
-
-            IToken classNameToken = context.ID().Symbol; 
-            string mainClassName = classNameToken.Text; // Para depuración o mensajes
-
-            if (context.children != null)
-            {
-                foreach (IParseTree child in context.children)
-                {
-                    if (child is MiniCSharpParser.VarDeclarationContext ||
-                        child is MiniCSharpParser.ClassDeclarationContext ||
-                        child is MiniCSharpParser.MethodDeclarationContext)
-                    {
-                        Visit(child); 
-                    }
-                }
-            }
-    
-            
-            Console.WriteLine($"--- Symbol Table for Program/Class: {mainClassName} (Level: {symbolTable.NivelActual}) ---");
-            symbolTable.Imprimir();
-
-            symbolTable.CloseScope(); 
-            return null; 
         }
 
         // 6) Imprimir tabla para inspección final
