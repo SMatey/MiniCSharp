@@ -20,35 +20,54 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitProg(MiniCSharpParser.ProgContext context)
         {
-            symbolTable.OpenScope(); 
+            // 1) Abrir el scope global
+            symbolTable.OpenScope();
 
-            foreach (var usingDirContext in context.usingDirective())
+            // 2) Pre-declarar funciones predefinidas
+            #region Predeclared Functions
+            var lenTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "len");
+            var lenMeth = symbolTable.InsertarMethod(lenTok, TablaSimbolos.IntType, context);
+            var lenParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "a");
+            symbolTable.InsertarParam(lenMeth, lenParamTok, TablaSimbolos.IntType, isArray: true, declCtx: null, symbolTable.NivelActual);
+
+            var ordTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "ord");
+            var ordMeth = symbolTable.InsertarMethod(ordTok, TablaSimbolos.IntType, context);
+            var ordParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "c");
+            symbolTable.InsertarParam(ordMeth, ordParamTok, TablaSimbolos.CharType, isArray: false, declCtx: null, symbolTable.NivelActual);
+
+            var chrTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "chr");
+            var chrMeth = symbolTable.InsertarMethod(chrTok, TablaSimbolos.CharType, context);
+            var chrParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "i");
+            symbolTable.InsertarParam(chrMeth, chrParamTok, TablaSimbolos.IntType, isArray: false, declCtx: null, symbolTable.NivelActual);
+            #endregion
+
+            // 3) Procesar using-directives
+            foreach (var u in context.usingDirective())
+                Visit(u);
+
+            // 4) Nombre de la “clase principal” (para debug)
+            string mainClassName = context.ID().Symbol.Text;
+
+            // 5) Declaraciones globales en el orden en que aparecen en el fichero.
+            //    Este es el cambio crucial que soluciona el problema.
+            foreach (var decl in context.children)
             {
-                Visit(usingDirContext); 
-            }
-
-            IToken classNameToken = context.ID().Symbol; 
-            string mainClassName = classNameToken.Text; // Para depuración o mensajes
-
-            if (context.children != null)
-            {
-                foreach (IParseTree child in context.children)
+                // Solo visitamos los nodos de declaración, ignorando llaves y otros tokens.
+                if (decl is MiniCSharpParser.VarDeclarationContext ||
+                    decl is MiniCSharpParser.ClassDeclarationContext ||
+                    decl is MiniCSharpParser.MethodDeclarationContext)
                 {
-                    if (child is MiniCSharpParser.VarDeclarationContext ||
-                        child is MiniCSharpParser.ClassDeclarationContext ||
-                        child is MiniCSharpParser.MethodDeclarationContext)
-                    {
-                        Visit(child); 
-                    }
+                    Visit(decl);
                 }
             }
-    
-            
+
+            // 6) Imprimir tabla para inspección final
             Console.WriteLine($"--- Symbol Table for Program/Class: {mainClassName} (Level: {symbolTable.NivelActual}) ---");
             symbolTable.Imprimir();
 
-            symbolTable.CloseScope(); 
-            return null; 
+            // 7) Cerrar el scope global
+            symbolTable.CloseScope();
+            return null;
         }
 
         public override object VisitUsingStat(MiniCSharpParser.UsingStatContext context)
@@ -75,92 +94,40 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitVarDeclaration(MiniCSharpParser.VarDeclarationContext context)
         {
-            MiniCSharpParser.TypeContext typeRuleContext = context.type();
-            object typeResult = Visit(typeRuleContext);
-
-            if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
+            // 1) Resolvemos el tipo
+            var typeResult = Visit(context.type());
+            if (!(typeResult is int resolvedType) || resolvedType == TablaSimbolos.UnknownType) 
             {
+                // El error ya fue reportado por VisitTypeIdent, no necesitamos hacer más.
                 return null;
             }
 
-            ITerminalNode typeNameTerminalNode = typeRuleContext.GetToken(MiniCSharpLexer.ID, 0);
-            // Es buena práctica comprobar si el nodo terminal (y por ende el token) no es null
-            // aunque para un ID en la regla 'type' debería existir.
-            if (typeNameTerminalNode != null && resolvedTypeCode == TablaSimbolos.VoidType && typeNameTerminalNode.Symbol.Text == "void")
-            {
-                Errors.Add($"Error: No se puede declarar una variable de tipo 'void' ('{context.GetText()}' en línea {context.Start.Line}).");
-                return null;
-            }
+            // 2) Verificamos si es un array
+            bool isArray = context.type().GetChild(1) != null && context.type().GetChild(1).GetText() == "[";
 
-            ITerminalNode lbrackNode = typeRuleContext.GetToken(MiniCSharpLexer.LBRACK, 0);
-            bool isArray = lbrackNode != null;
-
-            // GetTokens devuelve IList<ITerminalNode> o ITerminalNode[]
-            // Lo trataremos como IList<ITerminalNode> por consistencia con la API de ANTLR.
-            IList<ITerminalNode> idTerminalNodes = context.GetTokens(MiniCSharpLexer.ID);
-            if (idTerminalNodes != null)
+            // 3) Procesamos TODOS los identificadores de variables
+            var idNodes = context.ID();
+            for (int i = 0; i < idNodes.Length; i++) // <<< BUCLE CORREGIDO
             {
-                foreach (ITerminalNode idNode in idTerminalNodes)
+                var idToken = idNodes[i].Symbol;
+                string varName = idToken.Text;
+
+                // Verificar si ya existe en el nivel actual
+                if (symbolTable.BuscarNivelActual(varName) != null)
                 {
-                    IToken idToken = idNode.Symbol; // Obtener el IToken desde ITerminalNode
-                    string varName = idToken.Text;
-
-                    if (symbolTable.Buscar(varName) != null && symbolTable.BuscarNivelActual(varName) != null)
-                    {
-                        Errors.Add($"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
-                    }
-                    else
-                    {
-                        symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, context);
-                    }
+                    Errors.Add(
+                        $"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
+                }
+                else
+                {
+                    // Insertar la variable en la tabla de símbolos
+                    symbolTable.InsertarVar(idToken, resolvedType, isArray, context);
                 }
             }
-            return null;
-        }
-
-        public override object VisitClassDeclaration(MiniCSharpParser.ClassDeclarationContext context)
-        {
-            IToken classToken = context.ID().Symbol; 
-            string className = classToken.Text;
-            
-            if (symbolTable.BuscarNivelActual(className) != null)
-            {
-                Errors.Add($"Error: El identificador '{className}' ya está definido en este ámbito (línea {classToken.Line}). No se puede declarar como clase.");
-                return null;
-            }
-            
-            TablaSimbolos.ClassIdent classIdent = symbolTable.InsertarClass(classToken, context);
-            if (classIdent == null)
-            {
-                Errors.Add($"Error: No se pudo registrar la clase '{className}' (línea {classToken.Line}).");
-                return null;
-            }
-            Console.WriteLine($"Checker DBG: Declarada clase '{className}' en nivel {symbolTable.NivelActual}");
-
-            
-            TablaSimbolos outerSymbolTable = this.symbolTable;
-            this.symbolTable = classIdent.Members; 
-            
-            this.symbolTable.OpenScope(); 
-
-            
-            foreach (var varDeclContext in context.varDecl()) //
-            {
-                Visit(varDeclContext); 
-            }
-
-            
-            Console.WriteLine($"--- Members Symbol Table for Class: {className} ---");
-            this.symbolTable.Imprimir();
-
-            
-            this.symbolTable.CloseScope();
-
-            
-            this.symbolTable = outerSymbolTable;
 
             return null;
         }
+
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
@@ -870,34 +837,102 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-            IToken firstIdToken = context.ID(0)?.Symbol; 
-            // O context.GetToken(MiniCSharpLexer.ID, 0)?.Symbol;
+            // 1. Resolver el primer identificador en el scope actual.
+            var firstToken = context.ID(0).Symbol;
+            string firstName = firstToken.Text;
+            TablaSimbolos.Ident currentIdent = symbolTable.Buscar(firstName);
 
-            if (firstIdToken == null) {
-                Errors.Add($"Error: Designador inválido o vacío (línea {context.Start.Line}).");
-                return null;
-            }
-
-            TablaSimbolos.Ident ident = symbolTable.Buscar(firstIdToken.Text);
-
-            if (ident == null) {
-                Errors.Add($"Error: El identificador '{firstIdToken.Text}' no ha sido declarado (línea {firstIdToken.Line}).");
+            if (currentIdent == null)
+            {
+                Errors.Add($"Error: El nombre '{firstName}' no existe en el contexto actual (línea {firstToken.Line}).");
                 return null; 
             }
 
-            // TODO: Si hay context.DOT() o context.LBRACK(), procesar el resto del designador.
-            // Por ejemplo, si hay DOT ID:
-            // if (context.DOT().Count > 0 && ident is TablaSimbolos.ClassIdent classIdent) {
-            //     TablaSimbolos outerTable = this.symbolTable;
-            //     this.symbolTable = classIdent.Members;
-            //     // ... buscar el siguiente ID en this.symbolTable (tabla de miembros) ...
-            //     // Esto se vuelve recursivo o iterativo.
-            //     this.symbolTable = outerTable;
-            // }
-            // Similar para LBRACK expr RBRACK (acceso a array).
+            int idIndex = 1;      
+            int exprIndex = 0;    
 
-            return ident; // Devuelve el 'Ident' del primer ID por ahora.
+            // 2. Iterar sobre los sufijos del designator: (. ID | [ expr ])
+            foreach (var suffix in context.children.Skip(1))
+            {
+                if (currentIdent == null) return null; 
+
+                // --- CASO A: Acceso a campo ( . ID ) ---
+                if (suffix is ITerminalNode termNode && termNode.Symbol.Type == MiniCSharpLexer.DOT)
+                {
+                    if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || varIdent.Type != TablaSimbolos.ClassType)
+                    {
+                        Errors.Add($"Error: El operador '.' solo se puede aplicar a un objeto de una clase, pero '{currentIdent.GetName()}' no lo es (línea {termNode.Symbol.Line}).");
+                        return null;
+                    }
+
+                    // --- Bloque corregido y final para obtener el nombre de la clase ---
+                    var varDeclCtx = varIdent.DeclCtx as MiniCSharpParser.VarDeclarationContext;
+                    if (varDeclCtx == null)
+                    {
+                        Errors.Add($"Error interno: El contexto de declaración para '{varIdent.GetName()}' no es un VarDeclarationContext.");
+                        return null;
+                    }
+
+                    // ¡AQUÍ ESTÁ LA CORRECCIÓN! Hacemos un cast a TypeIdentContext.
+                    var typeIdentCtx = varDeclCtx.type() as MiniCSharpParser.TypeIdentContext;
+                    if (typeIdentCtx == null)
+                    {
+                        Errors.Add($"Error interno: No se pudo encontrar el nodo de tipo para la variable '{varIdent.GetName()}'.");
+                        return null;
+                    }
+                    
+                    // Ahora sí podemos llamar a .ID() sobre el tipo correcto.
+                    string className = typeIdentCtx.ID().GetText(); 
+                    // --- Fin del bloque corregido ---
+
+                    var classDef = symbolTable.Buscar(className) as TablaSimbolos.ClassIdent;
+                    if (classDef == null)
+                    {
+                        Errors.Add($"Error: La clase '{className}' no ha sido definida (línea {varIdent.Token.Line}).");
+                        return null;
+                    }
+
+                    string fieldName = context.ID(idIndex++).GetText();
+                    var memberIdent = classDef.Members.Buscar(fieldName);
+                    if (memberIdent == null)
+                    {
+                        Errors.Add($"Error: La clase '{className}' no contiene una definición para '{fieldName}' (línea {termNode.Symbol.Line}).");
+                        return null;
+                    }
+                    
+                    currentIdent = memberIdent;
+                }
+                // --- CASO B: Acceso a array ( [ expr ] ) ---
+                else if (suffix is ITerminalNode brackNode && brackNode.Symbol.Type == MiniCSharpLexer.LBRACK)
+                {
+                    if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || !varIdent.IsArray)
+                    {
+                        Errors.Add($"Error: Solo se pueden indexar arrays. '{currentIdent.GetName()}' no es un array (línea {brackNode.Symbol.Line}).");
+                        return null;
+                    }
+
+                    var indexExprCtx = context.expr(exprIndex++);
+                    object indexTypeResult = Visit(indexExprCtx);
+                    if (!(indexTypeResult is int indexType) || indexType != TablaSimbolos.IntType)
+                    {
+                        Errors.Add($"Error: El índice de un array debe ser una expresión de tipo 'int', no '{TablaSimbolos.TypeToString(indexTypeResult is int ? (int)indexTypeResult : -1)}' (línea {indexExprCtx.Start.Line}).");
+                    }
+
+                    currentIdent = new TablaSimbolos.VarIdent(
+                        currentIdent.Token,
+                        currentIdent.Type,      
+                        currentIdent.Nivel,
+                        isArray: false,         
+                        currentIdent.DeclCtx
+                    );
+                }
+            }
+
+            // 3. Devolvemos el identificador final resuelto.
+            return currentIdent;
         }
+
+
 
         public override object VisitRelationalOp(MiniCSharpParser.RelationalOpContext context)
         {

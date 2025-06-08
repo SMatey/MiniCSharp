@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from C:/Users/casam/OneDrive/Documentos/Anio 2025/semestre 1/QA/MiniCSharp/MiniCSharp/Grammar/MiniCSharpParser.g4 by ANTLR 4.13.2
+// Generated from C:/Users/Lizsa/OneDrive/Documents/GitHub/MiniCSharp/MiniCSharp/Grammar/MiniCSharpParser.g4 by ANTLR 4.13.2
 
 // Unreachable code detected
 #pragma warning disable 0162

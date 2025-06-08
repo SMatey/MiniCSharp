@@ -1,0 +1,34 @@
+// test_designator.txt – Pruebas específicas para VisitDesignatorNode
+class DesignatorTestProgram
+{
+    // Campos y clases
+    int x;
+    bool b;
+    int[] arr;
+    class A { int field; }
+    A a;
+
+    void Main()
+    {
+        // 1) Acceso válido a campo de objeto
+        a.field = 10;
+
+        // 2) ERROR: campo inexistente en la clase A
+        a.noField = 20;
+
+        // 3) ERROR: intento de acceso a campo sobre primitivo
+        x.field = 30;
+
+        // 4) Acceso válido a elemento de array
+        arr[0] = 40;
+
+        // 5) ERROR: índice no-int en un array
+        arr[b] = 50;
+
+        // 6) ERROR: indexar una variable que no es array
+        b[0] = true;
+
+        // 7) ERROR: intentar segunda dimensión en un array de una sola dimensión
+        arr[0][1] = 60;
+    }
+}
