@@ -17,58 +17,56 @@ namespace MiniCSharp.Grammar.Checker
             this.symbolTable = new TablaSimbolos();
             this.Errors = new List<string>();
         }
+        
+    public override object VisitProg(MiniCSharpParser.ProgContext context)
+    {
+        // 1) Abrir el scope global
+        symbolTable.OpenScope();
 
-        public override object VisitProg(MiniCSharpParser.ProgContext context)
+        // 2) Pre-declarar funciones predefinidas
+        #region Predeclared Functions
+        var lenTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "len");
+        var lenMeth = symbolTable.InsertarMethod(lenTok, TablaSimbolos.IntType, context);
+        var lenParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "a");
+        symbolTable.InsertarParam(lenMeth, lenParamTok, TablaSimbolos.IntType, isArray: true, declCtx: null, symbolTable.NivelActual);
+
+        var ordTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "ord");
+        var ordMeth = symbolTable.InsertarMethod(ordTok, TablaSimbolos.IntType, context);
+        var ordParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "c");
+        symbolTable.InsertarParam(ordMeth, ordParamTok, TablaSimbolos.CharType, isArray: false, declCtx: null, symbolTable.NivelActual);
+
+        var chrTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "chr");
+        var chrMeth = symbolTable.InsertarMethod(chrTok, TablaSimbolos.CharType, context);
+        var chrParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "i");
+        symbolTable.InsertarParam(chrMeth, chrParamTok, TablaSimbolos.IntType, isArray: false, declCtx: null, symbolTable.NivelActual);
+        #endregion
+
+        // 3) Procesar using-directives
+        foreach (var u in context.usingDirective())
+            Visit(u);
+
+        // 4) Nombre de la “clase principal” (para debug)
+        string mainClassName = context.ID().Symbol.Text;
+
+        // 5) Declaraciones globales en el orden en que aparecen en el fichero.
+        foreach (var decl in context.children)
         {
-            // 1) Abrir el scope global
-            symbolTable.OpenScope();
-
-            // 2) Pre-declarar funciones predefinidas
-            #region Predeclared Functions
-            var lenTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "len");
-            var lenMeth = symbolTable.InsertarMethod(lenTok, TablaSimbolos.IntType, context);
-            var lenParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "a");
-            symbolTable.InsertarParam(lenMeth, lenParamTok, TablaSimbolos.IntType, isArray: true, declCtx: null, symbolTable.NivelActual);
-
-            var ordTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "ord");
-            var ordMeth = symbolTable.InsertarMethod(ordTok, TablaSimbolos.IntType, context);
-            var ordParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "c");
-            symbolTable.InsertarParam(ordMeth, ordParamTok, TablaSimbolos.CharType, isArray: false, declCtx: null, symbolTable.NivelActual);
-
-            var chrTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "chr");
-            var chrMeth = symbolTable.InsertarMethod(chrTok, TablaSimbolos.CharType, context);
-            var chrParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "i");
-            symbolTable.InsertarParam(chrMeth, chrParamTok, TablaSimbolos.IntType, isArray: false, declCtx: null, symbolTable.NivelActual);
-            #endregion
-
-            // 3) Procesar using-directives
-            foreach (var u in context.usingDirective())
-                Visit(u);
-
-            // 4) Nombre de la “clase principal” (para debug)
-            string mainClassName = context.ID().Symbol.Text;
-
-            // 5) Declaraciones globales en el orden en que aparecen en el fichero.
-            //    Este es el cambio crucial que soluciona el problema.
-            foreach (var decl in context.children)
+            if (decl is MiniCSharpParser.VarDeclarationContext ||
+                decl is MiniCSharpParser.ClassDeclarationContext ||
+                decl is MiniCSharpParser.MethodDeclarationContext)
             {
-                // Solo visitamos los nodos de declaración, ignorando llaves y otros tokens.
-                if (decl is MiniCSharpParser.VarDeclarationContext ||
-                    decl is MiniCSharpParser.ClassDeclarationContext ||
-                    decl is MiniCSharpParser.MethodDeclarationContext)
-                {
-                    Visit(decl);
-                }
+                Visit(decl);
             }
-
-            // 6) Imprimir tabla para inspección final
-            Console.WriteLine($"--- Symbol Table for Program/Class: {mainClassName} (Level: {symbolTable.NivelActual}) ---");
-            symbolTable.Imprimir();
-
-            // 7) Cerrar el scope global
-            symbolTable.CloseScope();
-            return null;
         }
+
+        // 6) Imprimir tabla para inspección final
+        Console.WriteLine($"--- Symbol Table for Program/Class: {mainClassName} (Level: {symbolTable.NivelActual}) ---");
+        symbolTable.Imprimir();
+
+        // 7) Cerrar el scope global
+        symbolTable.CloseScope();
+        return null;
+    }
 
         public override object VisitUsingStat(MiniCSharpParser.UsingStatContext context)
         {
