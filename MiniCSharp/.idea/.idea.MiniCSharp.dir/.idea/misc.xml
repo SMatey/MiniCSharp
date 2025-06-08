@@ -6,7 +6,7 @@
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/Grammar/MiniCSharpLexer.g4" />
           <option name="autoGen" value="true" />
-          <option name="outputDir" value="C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\Grammar" />
+          <option name="outputDir" value="C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\Grammar" />
           <option name="libDir" value="" />
           <option name="encoding" value="" />
           <option name="pkg" value="parser.generated" />
@@ -16,7 +16,7 @@
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/Grammar/MiniCSharpParser.g4" />
           <option name="autoGen" value="true" />
-          <option name="outputDir" value="C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\Grammar" />
+          <option name="outputDir" value="C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\Grammar" />
           <option name="libDir" value="" />
           <option name="encoding" value="" />
           <option name="pkg" value="parser.generated" />
