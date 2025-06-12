@@ -1,0 +1,224 @@
+class SecondErrorTestProgram
+{
+    //ahora las variables pueden declararse tanto 
+    //int x;        Declaración
+    //x = 10;       Inicialización en línea separada
+    //como tambien:
+    //int x = 10;
+    // --- Declaraciones ---
+    int my_int;
+    bool my_bool;
+    int[] my_array;
+    char my_char; // Añadido para pruebas de switch con char
+
+    class Point { int p; }
+    Point my_point;
+
+    void VoidMethod() {}
+    void MethodWithIntParam(int val) {}
+
+    // --- Pruebas de condiciones y bucles ---
+    void Main()
+    {
+        // ERROR 8: Comparar int con clase en condición de if.
+        if (my_int > my_point) my_bool = true;
+
+        // ERROR 9: Comparar bool con clase en condición de if.
+        if (my_bool == my_point) my_bool = false;
+
+        // ERROR 10: Comparar array con entero en condición de if.
+        if (my_array == my_int) my_bool = false;
+
+        // ERROR 11: Comparar int con clase en condición de while.
+        while (my_int > my_point) my_int = 0;
+
+        // ERROR 12: Comparar bool con clase en condición de while.
+        while (my_bool == my_point) my_bool = false;
+
+        // ERROR 13: Comparar array con entero en condición de while.
+        while (my_array == my_int) my_bool = false;
+
+        // OK 17: break dentro de while
+        while (my_int > 0)
+        {
+            break; // break dentro de un bucle while
+        }
+        
+        // OK 2: break dentro de switch (este break es válido ahora que switchDepth se incrementa)
+        switch (my_int) 
+        { 
+            case 0: 
+                break; // Este break está dentro de un switch, que ahora permite break.
+        }
+
+        // OK 14: Bucle for con declaración e inicialización de 'i' y 'limit' directamente en la misma línea
+        for (int i = 0, limit = 5; i < limit; i = i + 1;)
+        {
+            Write(i);
+        }
+        // int x = i; // ERROR esperado: i no debería ser accesible aquí (fuera del for)
+        // int y = limit; // ERROR esperado: limit no debería ser accesible aquí (fuera del for)
+
+
+        // OK 15: Bucle for con variable declarada fuera y usada en la inicialización
+        int j;       // Declaración de la variable 'j'
+        j = 0;       // Inicialización de 'j' fuera del for
+
+        int dummyLimit2; // Declaro para que 'dummyLimit2' tenga un tipo en este scope.
+        dummyLimit2 = 5; // Asigno
+        for (j; j < dummyLimit2; j = j + 1;)
+        {
+            Write(j); // Imprime el valor actual de 'j'
+        }
+        // int z = j; // OK esperado: j debería ser accesible aquí (fuera del for)
+
+        // ERROR 16: Bucle for sin condición booleana explícita
+        // Tu checker debería marcar un error si la sección 'condition' es nula o no es booleana.
+        for (int k = 0; ; k = k + 1;)
+        {
+            Write(k);
+        }
+
+        // OK 25: Prueba read() con una variable de tipo int (tipo simple)
+        read(my_int);
+
+        // ERROR 26: Prueba read() con una variable de tipo clase (tipo no simple)
+        read(my_point);
+
+        // ERROR adicional esperado: Prueba read() con una variable de tipo array (tipo no simple)
+        // read(my_array);
+
+        // --- Nuevas pruebas de Switch ---
+
+        // OK 27: Switch con expresión int y casos int.
+        // Se espera que este bloque no genere errores semánticos.
+        int switch_val_int = 10;
+        switch (switch_val_int)
+        {
+            case 5:
+                Write(5);
+                break;
+            case 10:
+                Write(10);
+                break;
+            default:
+                Write(-1);
+                break;
+        }
+
+        // ERROR 28: Switch con expresión int, pero caso con tipo diferente (char).
+        // Se espera un error: "El tipo de la expresión del 'case' ('char') no coincide con el tipo de la expresión del 'switch' ('int')."
+        int another_switch_val_int = 20;
+        switch (another_switch_val_int)
+        {
+            case 10:
+                Write(10);
+                break;
+            case 'X': // ERROR aquí: int switch, char case
+                Write('X');
+                break;
+            default:
+                Write(-1);
+                break;
+        }
+
+        // ERROR 29: Switch con expresión de tipo incorrecto (bool).
+        // Se espera un error: "La expresión de la sentencia 'switch' debe ser de tipo 'int' o 'char', no 'bool'."
+        bool switch_val_bool = true;
+        switch (switch_val_bool) // ERROR aquí
+        {
+            case true:
+                Write(1);
+                break;
+            default:
+                Write(0);
+                break;
+        }
+
+        // ERROR 30: Switch con expresión int, pero caso con tipo diferente (char).
+        // Se espera un error: "El tipo de la expresión del 'case' ('char') no coincide con el tipo de la expresión del 'switch' ('int')."
+        // Este caso ya está en ERROR 28, lo duplico para consistencia con tu numeración si la necesitas.
+        // int another_switch_val_int_dup = 20;
+        // switch (another_switch_val_int_dup)
+        // {
+        //     case 10:
+        //         Write(10);
+        //         break;
+        //     case 'Y': // ERROR aquí: int switch, char case
+        //         Write('Y');
+        //         break;
+        //     default:
+        //         Write(-1);
+        //         break;
+        // }
+
+        // ERROR 31: Switch con expresión char, pero caso con tipo diferente (int).
+        // Se espera un error: "El tipo de la expresión del 'case' ('int') no coincide con el tipo de la expresión del 'switch' ('char')."
+        char another_switch_val_char = 'Z';
+        switch (another_switch_val_char)
+        {
+            case 'Y':
+                Write('Y');
+                break;
+            case 97: // ERROR aquí: char switch, int case (97 es 'a' ASCII)
+                Write('a');
+                break;
+            default:
+                Write('?');
+                break;
+        }
+
+        // ERROR 32: break fuera de un switch o bucle
+        break; // ERROR aquí: break fuera de cualquier contexto permitido
+    }
+
+    // ——— PRUEBAS ADICIONALES DE RETURN (fuera de Main, como deben ser) ———
+
+    // 17) return SIN expr en método void → OK
+    void ReturnVoidOk()
+    {
+        return;
+    }
+
+    // 18) return CON expr en método void → ERROR
+    void ReturnVoidWithExpr()
+    {
+        return 42;    // ERROR: método void no debe devolver valor
+    }
+
+    // 19) return CON expr en método int → OK
+    int ReturnIntOk()
+    {
+        return 123;
+    }
+
+    // 20) return SIN expr en método int → ERROR
+    int ReturnIntMissingExpr()
+    {
+        return;       // ERROR: falta expresión en return para método no-void
+    }
+
+    // 21) return TIPO wrong en método int → ERROR
+    int ReturnIntWrongType()
+    {
+        return true; // ERROR: se esperaba int, se encontró bool
+    }
+
+    // 22) return null en método referencia → OK
+    string ReturnStringNullOk()
+    {
+        return null;
+    }
+
+    // 23) return null en método int → ERROR
+    int ReturnNullInt()
+    {
+        return null; // ERROR: null solo para tipos referencia
+    }
+
+    // 24) return TIPO incompatible (clase) en método primitivo → ERROR
+    bool ReturnBoolWrongType()
+    {
+        return my_int; // ERROR: se esperaba bool, se encontró int
+    }
+}

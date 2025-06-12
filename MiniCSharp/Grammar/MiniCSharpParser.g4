@@ -16,8 +16,7 @@ qualifiedIdentifier
     : ID (DOT ID)* # QualifiedIdent;
 
 
-varDecl      : type ID (COMMA ID)* SEMICOLON                                                 # VarDeclaration;
-
+varDecl      : type ID (ASSIGN expr)? (COMMA ID (ASSIGN expr)?)* SEMICOLON # VarDeclaration;
 
 classDecl    : CLASS ID LBRACE varDecl* RBRACE                                               # ClassDeclaration;
 
@@ -34,7 +33,7 @@ type         : ID (LBRACK RBRACK)?                                              
 statement
     : designator (ASSIGN expr | LPAREN actPars? RPAREN | INCREMENT | DECREMENT) SEMICOLON # DesignatorStatement
     | IF LPAREN condition RPAREN statement (ELSE statement)?             # IfStatement
-    | FOR LPAREN expr SEMICOLON condition? SEMICOLON statement? RPAREN statement # ForStatement
+    | FOR LPAREN forInit? SEMICOLON condition? SEMICOLON forUpdate? RPAREN statement # ForStatement
     | WHILE LPAREN condition RPAREN statement                            # WhileStatement
     | BREAK SEMICOLON                                                    # BreakStatement
     | RETURN expr? SEMICOLON                                             # ReturnStatement
@@ -44,7 +43,28 @@ statement
     | switchStatement                                                    # SwitchDispatchStatement
     | SEMICOLON                                                          # EmptyStatement
     ;
+forVarDecl
+    : type ID (LBRACK RBRACK)* (ASSIGN expr)?
+    ;
 
+// Modifica forInit para que pueda ser la nueva forVarDecl o una lista de expresiones.
+forInit
+    : forTypeAndMultipleVars // Permite "int i = 0, limit = 5" o "int i = 0"
+    | expr (COMMA expr)* // Permite "i = 0, j = 10" o solo "i = 0"
+    ;
+forDeclaredVarPart
+    : ID (LBRACK RBRACK)* (ASSIGN expr)?
+    ;
+
+// Modificación de forTypeAndMultipleVars para usar la nueva regla
+forTypeAndMultipleVars
+    : type forDeclaredVarPart (COMMA forDeclaredVarPart)*
+    ;
+    
+// Tu regla forUpdate NO CAMBIA
+forUpdate
+    : statement
+    ;
 
 switchStatement
     : SWITCH LPAREN expr RPAREN LBRACE switchBlock RBRACE                # SwitchStat;

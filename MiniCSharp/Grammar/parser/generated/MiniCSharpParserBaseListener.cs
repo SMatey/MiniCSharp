@@ -303,6 +303,66 @@ public partial class MiniCSharpParserBaseListener : IMiniCSharpParserListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitEmptyStatement([NotNull] MiniCSharpParser.EmptyStatementContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forVarDecl"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterForVarDecl([NotNull] MiniCSharpParser.ForVarDeclContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forVarDecl"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitForVarDecl([NotNull] MiniCSharpParser.ForVarDeclContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forInit"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterForInit([NotNull] MiniCSharpParser.ForInitContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forInit"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitForInit([NotNull] MiniCSharpParser.ForInitContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forDeclaredVarPart"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterForDeclaredVarPart([NotNull] MiniCSharpParser.ForDeclaredVarPartContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forDeclaredVarPart"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitForDeclaredVarPart([NotNull] MiniCSharpParser.ForDeclaredVarPartContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forTypeAndMultipleVars"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterForTypeAndMultipleVars([NotNull] MiniCSharpParser.ForTypeAndMultipleVarsContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forTypeAndMultipleVars"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitForTypeAndMultipleVars([NotNull] MiniCSharpParser.ForTypeAndMultipleVarsContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forUpdate"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterForUpdate([NotNull] MiniCSharpParser.ForUpdateContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forUpdate"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitForUpdate([NotNull] MiniCSharpParser.ForUpdateContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by the <c>SwitchStat</c>
 	/// labeled alternative in <see cref="MiniCSharpParser.switchStatement"/>.
 	/// <para>The default implementation does nothing.</para>

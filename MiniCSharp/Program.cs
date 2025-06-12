@@ -13,7 +13,7 @@ namespace MiniCSharp // O el namespace principal de tu proyecto
         static void Main(string[] args)
         {
             // NOTA: El filePath está hardcodeado. Puede ser mejor hacerlo relativo o configurable.
-            var filePath = "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\test.txt"; 
+            var filePath = "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\test3.txt"; 
 
             if (!File.Exists(filePath))
             {

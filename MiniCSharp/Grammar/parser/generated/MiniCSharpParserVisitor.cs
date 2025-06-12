@@ -166,6 +166,36 @@ public interface IMiniCSharpParserVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitEmptyStatement([NotNull] MiniCSharpParser.EmptyStatementContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="MiniCSharpParser.forVarDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForVarDecl([NotNull] MiniCSharpParser.ForVarDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="MiniCSharpParser.forInit"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForInit([NotNull] MiniCSharpParser.ForInitContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="MiniCSharpParser.forDeclaredVarPart"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForDeclaredVarPart([NotNull] MiniCSharpParser.ForDeclaredVarPartContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="MiniCSharpParser.forTypeAndMultipleVars"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForTypeAndMultipleVars([NotNull] MiniCSharpParser.ForTypeAndMultipleVarsContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="MiniCSharpParser.forUpdate"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitForUpdate([NotNull] MiniCSharpParser.ForUpdateContext context);
+	/// <summary>
 	/// Visit a parse tree produced by the <c>SwitchStat</c>
 	/// labeled alternative in <see cref="MiniCSharpParser.switchStatement"/>.
 	/// </summary>

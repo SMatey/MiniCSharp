@@ -260,6 +260,56 @@ public interface IMiniCSharpParserListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitEmptyStatement([NotNull] MiniCSharpParser.EmptyStatementContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forVarDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterForVarDecl([NotNull] MiniCSharpParser.ForVarDeclContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forVarDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitForVarDecl([NotNull] MiniCSharpParser.ForVarDeclContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forInit"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterForInit([NotNull] MiniCSharpParser.ForInitContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forInit"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitForInit([NotNull] MiniCSharpParser.ForInitContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forDeclaredVarPart"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterForDeclaredVarPart([NotNull] MiniCSharpParser.ForDeclaredVarPartContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forDeclaredVarPart"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitForDeclaredVarPart([NotNull] MiniCSharpParser.ForDeclaredVarPartContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forTypeAndMultipleVars"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterForTypeAndMultipleVars([NotNull] MiniCSharpParser.ForTypeAndMultipleVarsContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forTypeAndMultipleVars"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitForTypeAndMultipleVars([NotNull] MiniCSharpParser.ForTypeAndMultipleVarsContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="MiniCSharpParser.forUpdate"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterForUpdate([NotNull] MiniCSharpParser.ForUpdateContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="MiniCSharpParser.forUpdate"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitForUpdate([NotNull] MiniCSharpParser.ForUpdateContext context);
+	/// <summary>
 	/// Enter a parse tree produced by the <c>SwitchStat</c>
 	/// labeled alternative in <see cref="MiniCSharpParser.switchStatement"/>.
 	/// </summary>

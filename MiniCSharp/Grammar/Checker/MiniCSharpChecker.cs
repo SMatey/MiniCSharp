@@ -9,9 +9,11 @@ namespace MiniCSharp.Grammar.Checker
     {
         private TablaSimbolos symbolTable;
         public List<string> Errors { get; private set; }
-        
+        private int loopDepth = 0;
+        private int switchDepth = 0;
         private TablaSimbolos.MethodIdent currentProcessingMethod = null;
         private int currentMethodBodyScopeLevel = -1;
+        private int currentSwitchExprType = TablaSimbolos.UnknownType;
         public MiniCsharpChecker()
         {
             this.symbolTable = new TablaSimbolos();
@@ -20,68 +22,97 @@ namespace MiniCSharp.Grammar.Checker
         
     public override object VisitProg(MiniCSharpParser.ProgContext context)
         {
-            symbolTable.OpenScope();
+            symbolTable.OpenScope(); // Abre el scope global del programa
 
-            #region Predeclared Functions
-            var lenTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "len");
-            var lenMeth = symbolTable.InsertarMethod(lenTok, TablaSimbolos.IntType, context);
-            var lenParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "a");
-            symbolTable.InsertarParam(
-                lenMeth, 
-                lenParamTok, 
-                TablaSimbolos.IntType, 
-                isArray: true, 
-                declCtx: null, 
-                symbolTable.NivelActual, 
-                addToScope: false 
-            );
+            // ---------------------------------------------------------------------------------------------------------
+            // Inserción de funciones predefinidas (Built-in functions)
+            // Se añaden a la tabla de símbolos como MethodIdent, y sus parámetros se añaden directamente al MethodIdent.
+            // NO se usa symbolTable.InsertarParam aquí para los parámetros de built-in,
+            // porque no deben aparecer en el scope global de la tabla.
+            // ---------------------------------------------------------------------------------------------------------
 
-            var ordTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "ord");
-            var ordMeth = symbolTable.InsertarMethod(ordTok, TablaSimbolos.IntType, context);
-            var ordParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "c");
-            symbolTable.InsertarParam(
-                ordMeth, 
-                ordParamTok, 
-                TablaSimbolos.CharType, 
-                isArray: false, 
-                declCtx: null, 
-                symbolTable.NivelActual, 
-                addToScope: false
-            );
+            // 1. "Write" method: void Write(int value)
+            IToken writeToken = new CommonToken(MiniCSharpLexer.WRITE, "Write");
+            // InsertarMethod añade el método a la tabla de símbolos del scope actual (nivel 0 para global).
+            TablaSimbolos.MethodIdent writeMethod = symbolTable.InsertarMethod(writeToken, TablaSimbolos.VoidType, null);
+            // Añadir el parámetro directamente a la definición del método.
+            IToken writeParamToken = new CommonToken(MiniCSharpLexer.ID, "value");
+            writeMethod.AddParam(new TablaSimbolos.ParamIdent(
+                writeParamToken,
+                TablaSimbolos.IntType,
+                false, // isArray: false
+                null,  // declCtx: null for built-in params
+                0      // methodBodyNivel: 0 o el nivel que uses para parámetros de built-in.
+                       // Este nivel en ParamIdent es más para el contexto interno del método,
+                       // no para si está en la tabla global.
+            ));
 
-            var chrTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "chr");
-            var chrMeth = symbolTable.InsertarMethod(chrTok, TablaSimbolos.CharType, context);
-            var chrParamTok = new Antlr4.Runtime.CommonToken(MiniCSharpLexer.ID, "i");
-            symbolTable.InsertarParam(
-                chrMeth, 
-                chrParamTok, 
-                TablaSimbolos.IntType, 
-                isArray: false, 
-                declCtx: null, 
-                symbolTable.NivelActual, 
-                addToScope: false 
-            );
-            #endregion
+            // 2. "len" method: int len(int[] a)
+            IToken lenTok = new CommonToken(MiniCSharpLexer.ID, "len");
+            TablaSimbolos.MethodIdent lenMeth = symbolTable.InsertarMethod(lenTok, TablaSimbolos.IntType, null);
+            IToken lenParamTok = new CommonToken(MiniCSharpLexer.ID, "a");
+            lenMeth.AddParam(new TablaSimbolos.ParamIdent(
+                lenParamTok,
+                TablaSimbolos.IntType,
+                true,  // isArray: true
+                null,
+                0
+            ));
 
-            foreach (var u in context.usingDirective())
-                Visit(u);
-            
-            string mainClassName = context.ID().Symbol.Text;
-            
-            foreach (var decl in context.children)
+            // 3. "ord" method: int ord(char c)
+            IToken ordTok = new CommonToken(MiniCSharpLexer.ID, "ord");
+            TablaSimbolos.MethodIdent ordMeth = symbolTable.InsertarMethod(ordTok, TablaSimbolos.IntType, null);
+            IToken ordParamTok = new CommonToken(MiniCSharpLexer.ID, "c");
+            ordMeth.AddParam(new TablaSimbolos.ParamIdent(
+                ordParamTok,
+                TablaSimbolos.CharType,
+                false, // isArray: false
+                null,
+                0
+            ));
+
+            // 4. "chr" method: char chr(int i)
+            IToken chrTok = new CommonToken(MiniCSharpLexer.ID, "chr");
+            TablaSimbolos.MethodIdent chrMeth = symbolTable.InsertarMethod(chrTok, TablaSimbolos.CharType, null);
+            IToken chrParamTok = new CommonToken(MiniCSharpLexer.ID, "i");
+            chrMeth.AddParam(new TablaSimbolos.ParamIdent(
+                chrParamTok,
+                TablaSimbolos.IntType,
+                false, // isArray: false
+                null,
+                0
+            ));
+            // ---------------------------------------------------------------------------------------------------------
+
+            // Procesa las directivas 'using'
+            foreach (var usingDirContext in context.usingDirective())
             {
-                if (decl is MiniCSharpParser.VarDeclarationContext ||
-                    decl is MiniCSharpParser.ClassDeclarationContext ||
-                    decl is MiniCSharpParser.MethodDeclarationContext)
+                Visit(usingDirContext);
+            }
+
+            // Obtiene el nombre de la clase principal (el ID del contexto Prog)
+            IToken classNameToken = context.ID().Symbol;
+            string mainClassName = classNameToken.Text;
+
+            // Visita las declaraciones de variables, clases y métodos dentro del programa
+            if (context.children != null)
+            {
+                foreach (IParseTree child in context.children)
                 {
-                    Visit(decl);
+                    if (child is MiniCSharpParser.VarDeclarationContext ||
+                        child is MiniCSharpParser.ClassDeclarationContext ||
+                        child is MiniCSharpParser.MethodDeclarationContext)
+                    {
+                        Visit(child);
+                    }
                 }
             }
-            
+
+            // Imprime la tabla de símbolos al finalizar el scope del programa
             Console.WriteLine($"--- Symbol Table for Program/Class: {mainClassName} (Level: {symbolTable.NivelActual}) ---");
             symbolTable.Imprimir();
 
-            symbolTable.CloseScope();
+            symbolTable.CloseScope(); // Cierra el scope global
             return null;
         }
 
@@ -443,47 +474,388 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitIfStatement(MiniCSharpParser.IfStatementContext context)
         {
-            return base.VisitIfStatement(context);
+            // 1. Resolver tipo de la condición
+            object condTypeObj = Visit(context.condition());
+            int condType = (condTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+            // 2. Verificar que sea bool
+            if (condType != TablaSimbolos.BoolType)
+            {
+                int line = context.condition().Start.Line;
+                Errors.Add($"Error: La condición de 'if' debe ser de tipo 'bool', pero se encontró '{TablaSimbolos.TypeToString(condType)}' (línea {line}).");
+            }
+
+            // 3. Visitar bloque/statement del 'then'
+            Visit(context.statement(0));
+
+            // 4. Si hay 'else', visitar su statement
+            if (context.ELSE() != null && context.statement().Length > 1)
+            {
+                Visit(context.statement(1));
+            }
+
+            return null;
         }
 
         public override object VisitForStatement(MiniCSharpParser.ForStatementContext context)
         {
-            return base.VisitForStatement(context);
+            // 1. Abrir un nuevo ámbito para el bucle for.
+            // Las variables declaradas en forInit (como 'int i = 0;') vivirán solo en este ámbito.
+            symbolTable.OpenScope();
+
+            // 2. Visitar la parte de inicialización del for (forInit).
+            // Aquí puede ser una declaración de variable (varDecl) o una expresión (expr).
+            if (context.forInit() != null)
+            {
+                // El forInit puede ser un VarDeclarationContext o un ExpressionContext.
+                // El Visit adecuado será llamado por ANTLR.
+                Visit(context.forInit());
+            }
+
+            // 3. Visitar la condición del for.
+            // Esta sección ha sido ajustada para manejar cuando la condición es nula (ausente).
+            if (context.condition() != null)
+            {
+                object conditionTypeObj = Visit(context.condition());
+                int conditionType = (conditionTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+                if (conditionType != TablaSimbolos.BoolType)
+                {
+                    Errors.Add($"Error: La condición del bucle 'for' debe ser de tipo booleana (línea {context.condition().Start.Line}).");
+                }
+            }
+            else // ¡Este 'else' es clave para el ERROR 16, cuando la condición está ausente!
+            {
+                Errors.Add($"Error: La condición del bucle 'for' es obligatoria y debe ser booleana (línea {context.Start.Line}).");
+            }
+
+            // 4. Visitar la parte de actualización del for (forUpdate).
+            if (context.forUpdate() != null)
+            {
+                Visit(context.forUpdate());
+            }
+
+            // 5. Visitar el cuerpo del bucle for.
+            if (context.statement() != null)
+            {
+                Visit(context.statement());
+            }
+
+            // 6. Cerrar el ámbito del bucle for.
+            // Esto eliminará las variables locales del for (como 'i' si se declaró dentro).
+            symbolTable.CloseScope();
+
+            return null; // El for statement no produce un valor.
         }
+        
+        public override object VisitForVarDecl(MiniCSharpParser.ForVarDeclContext context)
+        {
+            // Esta lógica es MUY similar a tu VisitVarDeclaration, pero para la regla forVarDecl.
+            // Solo permitimos una declaración de variable en forVarDecl, no una lista como en varDecl.
+
+            MiniCSharpParser.TypeContext typeRuleContext = context.type();
+            object typeResult = Visit(typeRuleContext);
+
+            if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
+            {
+                // Si el tipo es desconocido o no se resolvió, ya hay un error, no continuamos.
+                return null;
+            }
+
+            // Validación para no usar 'void' como tipo de variable (opcional, pero buena práctica)
+            ITerminalNode typeNameTerminalNode = typeRuleContext.GetToken(MiniCSharpLexer.ID, 0);
+            if (typeNameTerminalNode != null && resolvedTypeCode == TablaSimbolos.VoidType && typeNameTerminalNode.Symbol.Text == "void")
+            {
+                Errors.Add($"Error: No se puede declarar una variable de tipo 'void' ('{context.GetText()}' en línea {context.Start.Line}).");
+                return null;
+            }
+
+            bool isArray = context.LBRACK().Length > 0; // Verifica si es un array (ej: int[] i)
+
+            // Obtener el ID de la variable declarada (solo hay uno en forVarDecl)
+            ITerminalNode idNode = context.ID();
+            IToken idToken = idNode.Symbol;
+            string varName = idToken.Text;
+
+            // Verificar si la variable ya existe en el ámbito actual (para detectar duplicados en el for)
+            if (symbolTable.BuscarNivelActual(varName) != null)
+            {
+                Errors.Add($"Error: La variable '{varName}' ya ha sido declarada en este ámbito del 'for' (línea {idToken.Line}).");
+            }
+            else
+            {
+                // ¡Insertar la variable en la tabla de símbolos en el ámbito actual del for!
+                // Tu InsertarVar ya usa this.nivelActual, lo cual es perfecto.
+                symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, context);
+            }
+
+            // Si hay una inicialización (ej: ' = 0'), visita la expresión y comprueba el tipo.
+            if (context.expr() != null)
+            {
+                object exprTypeObj = Visit(context.expr());
+                int exprType = (exprTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+                // Aquí podrías añadir lógica más sofisticada de asignación de tipos,
+                // por ejemplo, si se permite la conversión implícita de int a double.
+                if (exprType != TablaSimbolos.UnknownType && exprType != resolvedTypeCode)
+                {
+                    Errors.Add($"Error: Tipo incompatible en la inicialización de '{varName}'. Se esperaba '{TablaSimbolos.TypeToString(resolvedTypeCode)}' pero se encontró '{TablaSimbolos.TypeToString(exprType)}' (línea {idToken.Line}).");
+                }
+            }
+
+            return null; // Este método no devuelve un tipo de valor.
+        }
+         public override object VisitForTypeAndMultipleVars(MiniCSharpParser.ForTypeAndMultipleVarsContext context)
+        {
+            MiniCSharpParser.TypeContext typeRuleContext = context.type();
+            object typeResult = Visit(typeRuleContext);
+            if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
+            {
+                return null;
+            }
+
+            foreach (var declaredVarPartCtx in context.forDeclaredVarPart())
+            {
+                IToken idToken = declaredVarPartCtx.ID().Symbol;
+                string varName = idToken.Text;
+                int line = idToken.Line;
+
+                bool isArray = declaredVarPartCtx.LBRACK().Any();
+
+                if (symbolTable.BuscarNivelActual(varName) != null)
+                {
+                    Errors.Add($"Error: La variable '{varName}' ya ha sido declarada en este ámbito (línea {line}).");
+                    continue;
+                }
+
+                symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, declaredVarPartCtx);
+
+                if (declaredVarPartCtx.expr() != null)
+                {
+                    object exprTypeObj = Visit(declaredVarPartCtx.expr());
+                    int exprType = (exprTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+                    if (exprType != TablaSimbolos.UnknownType && exprType != resolvedTypeCode)
+                    {
+                        Errors.Add($"Error: Tipo incompatible en la inicialización de '{varName}'. Se esperaba '{TablaSimbolos.TypeToString(resolvedTypeCode)}' pero se encontró '{TablaSimbolos.TypeToString(exprType)}' (línea {line}).");
+                    }
+                }
+            }
+
+            return null;
+        }
+                
+        
+        public override object VisitForInit(MiniCSharpParser.ForInitContext context)
+        {
+            // Caso 1: Múltiples variables declaradas con un solo tipo (ej: for (int i = 0, limit = 5; ...))
+            if (context.forTypeAndMultipleVars() != null) // Si esta alternativa coincide
+            {
+                Visit(context.forTypeAndMultipleVars()); // Llama al nuevo método Visit
+            }
+            // Caso 2: Múltiples expresiones (ej: for (i = 0, j = 10; ...))
+            else if (context.expr() != null && context.expr().Any())
+            {
+                foreach (var exprCtx in context.expr())
+                {
+                    Visit(exprCtx);
+                }
+            }
+
+            return null;
+        }
+        
 
         public override object VisitWhileStatement(MiniCSharpParser.WhileStatementContext context)
         {
-            return base.VisitWhileStatement(context);
+            // Incrementamos el contador de loopDepth al entrar en el bucle
+            loopDepth++;
+
+            // 1. Chequear el tipo de la condición
+            object condTypeObj = Visit(context.condition());
+            int condType = (condTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+            // 2. Verificar que la condición sea de tipo bool
+            if (condType != TablaSimbolos.BoolType)
+            {
+                int line = context.condition().Start.Line;
+                Errors.Add(
+                    $"Error: La condición de 'while' debe ser de tipo 'bool', " +
+                    $"pero se encontró '{TablaSimbolos.TypeToString(condType)}' (línea {line})."
+                );
+            }
+
+            // 3. Visitar recursivamente el cuerpo del while
+            Visit(context.statement());
+
+            // Salimos del bucle → decrementamos el contador de loopDepth
+            loopDepth--;
+
+            return null;
         }
 
         public override object VisitBreakStatement(MiniCSharpParser.BreakStatementContext context)
         {
-            return base.VisitBreakStatement(context);
+            // 'break' es válido si estamos dentro de un bucle O un switch
+            if (loopDepth == 0 && switchDepth == 0)
+            {
+                Errors.Add($"Error semántico: La sentencia 'break' solo puede aparecer dentro de un bucle 'for', 'while' o una sentencia 'switch' (línea {context.Start.Line}).");
+            }
+            return null;
         }
 
         public override object VisitReturnStatement(MiniCSharpParser.ReturnStatementContext context)
         {
-            return base.VisitReturnStatement(context);
+            // 1. Verificar que estemos dentro de un método
+            if (currentProcessingMethod == null)
+            {
+                int line = context.Start.Line;
+                Errors.Add($"Error: 'return' fuera de un método (línea {line}).");
+                return null;
+            }
+
+            bool hasExpr = context.expr() != null;
+            int methodReturnType = currentProcessingMethod.ReturnType;
+
+            // 2. Si el método es void, no debe haber expresión
+            if (methodReturnType == TablaSimbolos.VoidType)
+            {
+                if (hasExpr)
+                {
+                    int line = context.Start.Line;
+                    Errors.Add(
+                        $"Error: El método '{currentProcessingMethod.GetName()}' es void y no debe devolver un valor " +
+                        $"(return con expresión) (línea {line})."
+                    );
+                }
+            }
+            else
+            {
+                // 3. Si el método no es void, debe haber expresión
+                if (!hasExpr)
+                {
+                    int line = context.Start.Line;
+                    Errors.Add(
+                        $"Error: El método '{currentProcessingMethod.GetName()}' debe devolver un valor de tipo " +
+                        $"'{TablaSimbolos.TypeToString(methodReturnType)}' (falta expresión en return) (línea {line})."
+                    );
+                }
+                else
+                {
+                    // 4. Verificar compatibilidad de tipos
+                    object exprTypeObj = Visit(context.expr());
+                    int exprType = (exprTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+                    bool compatible =
+                        exprType == methodReturnType ||
+                        (exprType == TablaSimbolos.NullType &&
+                         (methodReturnType == TablaSimbolos.ClassType ||
+                          methodReturnType == TablaSimbolos.StringType ||
+                          methodReturnType == TablaSimbolos.ArrayType));
+
+                    if (!compatible)
+                    {
+                        int line = context.expr().Start.Line;
+                        Errors.Add(
+                            $"Error: Tipo incompatible en return de '{currentProcessingMethod.GetName()}'. " +
+                            $"Se esperaba '{TablaSimbolos.TypeToString(methodReturnType)}' " +
+                            $"pero se encontró '{TablaSimbolos.TypeToString(exprType)}' (línea {line})."
+                        );
+                    }
+                }
+            }
+
+            return null;
         }
 
         public override object VisitReadStatement(MiniCSharpParser.ReadStatementContext context)
         {
-            return base.VisitReadStatement(context);
+            // 1. Visitar el designator para resolver a qué variable se refiere y obtener su tipo.
+            // Se espera que VisitDesignatorNode devuelva una TablaSimbolos.Ident.
+            object designatorResult = Visit(context.designator());
+
+            // Asegúrate de que el designator resuelva a una entrada de la tabla de símbolos (VarIdent, ParamIdent, etc.)
+            if (!(designatorResult is TablaSimbolos.Ident identEntry))
+            {
+                Errors.Add($"Error: El argumento de 'read' debe ser una variable asignable (línea {context.designator().Start.Line}).");
+                return null;
+            }
+
+            // 2. Verificar que el identificador sea una variable (no un método, clase, etc.).
+            // Ojo: Si tu lenguaje permite leer campos de clase (ej: `read(myObject.field)`),
+            // la lógica en VisitDesignatorNode ya debería haber resuelto `identEntry` a esa `VarIdent` o `ParamIdent` del campo.
+            if (!(identEntry is TablaSimbolos.VarIdent) && !(identEntry is TablaSimbolos.ParamIdent))
+            {
+                Errors.Add($"Error: El argumento de 'read' debe ser una variable (línea {context.designator().Start.Line}).");
+                return null;
+            }
+
+            // 3. Obtener el tipo de la variable.
+            int varType = identEntry.Type;
+
+            // 4. Verificar que el tipo de la variable sea "simple" y asignable.
+            // Los tipos de referencia (clases, arrays) generalmente no se leen directamente con `read()`.
+            // Adapta esta lista según los tipos "simples" que tu lenguaje soporta para `read`.
+            if (varType == TablaSimbolos.UnknownType ||
+                varType == TablaSimbolos.VoidType ||
+                varType == TablaSimbolos.ClassType || // No se puede leer una instancia de clase directamente
+                varType == TablaSimbolos.ArrayType)   // No se puede leer un array completo directamente
+            {
+                Errors.Add($"Error: 'read' solo puede aplicarse a variables de tipos simples (int, double, char, bool, string) (línea {context.designator().Start.Line}).");
+                return null;
+            }
+
+            // Si todo es correcto, no se añaden errores.
+            return null;
         }
 
-        public override object VisitWriteStatement(MiniCSharpParser.WriteStatementContext context)
+        public override object VisitWriteStatement(MiniCSharpParser.WriteStatementContext context) // ¡Asegurate del 'override' aquí!
         {
-            return base.VisitWriteStatement(context);
+            // *** ¡IMPORTANTE! ***
+            // NO debes buscar 'Write' en la tabla de símbolos aquí.
+            // 'Write' es una sentencia incorporada (built-in) de tu lenguaje.
+
+            // 1. Visita la expresión que se quiere imprimir para determinar su tipo.
+            object exprTypeObj = Visit(context.expr());
+            int exprType = (exprTypeObj is int t) ? t : TablaSimbolos.UnknownType;
+
+            // 2. Valida que el tipo de la expresión sea imprimible.
+            if (exprType == TablaSimbolos.UnknownType ||
+                (exprType != TablaSimbolos.IntType &&
+                 exprType != TablaSimbolos.DoubleType && // Si tienes tipo double
+                 exprType != TablaSimbolos.BoolType &&   // Si permites imprimir booleanos
+                 exprType != TablaSimbolos.CharType &&   // Si tienes tipo char
+                 exprType != TablaSimbolos.StringType && // Si tienes tipo string
+                 exprType != TablaSimbolos.NullType))    // Si permites imprimir 'null'
+            {
+                Errors.Add($"Error: Tipo de expresión no imprimible en sentencia 'write': '{TablaSimbolos.TypeToString(exprType)}' (línea {context.expr().Start.Line}).");
+            }
+
+            // 3. Si hay un INTLIT (como en 'write(expr, 10);'), puedes añadir validación aquí.
+            if (context.INTLIT() != null)
+            {
+                // Lógica de validación para el argumento INTLIT
+            }
+
+            // Retorna null para la sentencia, ya que no produce un valor de tipo.
+            return null;
         }
 
         public override object VisitBlockStatement(MiniCSharpParser.BlockStatementContext context)
         {
-            return base.VisitBlockStatement(context);
+            // Aquí, simplemente delegas el control al método Visit de la regla 'block' real.
+            // Toda la lógica semántica de un bloque (ámbitos, varDecls, statements) debe estar en VisitBlockNode.
+            Console.WriteLine($"Checker DBG: Visitando BlockStatement (como parte de una sentencia) en línea {context.Start.Line}");
+            return Visit(context.block()); // Llama a VisitBlockNode
         }
 
         public override object VisitSwitchDispatchStatement(MiniCSharpParser.SwitchDispatchStatementContext context)
         {
-            return base.VisitSwitchDispatchStatement(context);
+            // Aquí simplemente delegamos al método Visit que maneja la estructura real del switch.
+            // Es útil si, por ejemplo, quisieras añadir lógica específica que se aplique solo cuando un switch
+            // es tratado como una sentencia general (por ejemplo, para algún análisis de flujo de control).
+            // Por ahora, solo llamamos al Visit de la regla 'switchStatement' en sí misma.
+            return Visit(context.switchStatement());
         }
 
         public override object VisitEmptyStatement(MiniCSharpParser.EmptyStatementContext context)
@@ -493,27 +865,108 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitSwitchStat(MiniCSharpParser.SwitchStatContext context)
         {
-            return base.VisitSwitchStat(context);
+            switchDepth++; // Entra en una sentencia switch
+
+            // 1. Visitar y verificar el tipo de la expresión del switch
+            object exprTypeResult = Visit(context.expr());
+
+            if (!(exprTypeResult is int switchExprType))
+            {
+                Errors.Add($"Error semántico: La expresión de la sentencia 'switch' no pudo ser evaluada a un tipo válido (línea {context.Start.Line}).");
+                currentSwitchExprType = TablaSimbolos.UnknownType; // Reset en caso de error
+            }
+            else
+            {
+                // Verificar que la expresión del switch sea de tipo ordinal (int o char)
+                if (switchExprType != TablaSimbolos.IntType && switchExprType != TablaSimbolos.CharType)
+                {
+                    Errors.Add($"Error semántico: La expresión de la sentencia 'switch' debe ser de tipo 'int' o 'char', no '{TablaSimbolos.TypeToString(switchExprType)}' (línea {context.Start.Line}).");
+                    currentSwitchExprType = TablaSimbolos.UnknownType; // Marcar como desconocido para evitar más errores en 'case'
+                }
+                else
+                {
+                    currentSwitchExprType = switchExprType; // Almacena el tipo para su uso en los 'case'
+                    Console.WriteLine($"Checker DBG: Expresión de switch de tipo {TablaSimbolos.TypeToString(currentSwitchExprType)}.");
+                }
+            }
+
+            // Visitar el bloque del switch
+            Visit(context.switchBlock());
+
+            currentSwitchExprType = TablaSimbolos.UnknownType; // Restablecer el tipo de la expresión switch al salir
+            switchDepth--; // Sale de la sentencia switch
+            return null;
         }
 
         public override object VisitSwitchBlockContent(MiniCSharpParser.SwitchBlockContentContext context)
         {
-            return base.VisitSwitchBlockContent(context);
+            // Simplemente visita todas las secciones de switch dentro del bloque
+            foreach (var sectionContext in context.switchSection())
+            {
+                Visit(sectionContext);
+            }
+            return null;
         }
 
         public override object VisitSwitchCaseSection(MiniCSharpParser.SwitchCaseSectionContext context)
         {
-            return base.VisitSwitchCaseSection(context);
+            // Visitar todos los labels (case o default) de esta sección
+            foreach (var labelContext in context.switchLabel())
+            {
+                Visit(labelContext);
+            }
+
+            // Visitar todas las sentencias dentro de esta sección de case/default
+            // Nota: Aquí se asume que las sentencias internas se manejan con sus propios Visit.
+            foreach (var statementContext in context.statement())
+            {
+                Visit(statementContext);
+            }
+            return null;
         }
 
         public override object VisitCaseLabel(MiniCSharpParser.CaseLabelContext context)
         {
-            return base.VisitCaseLabel(context);
+            // 1. Visitar la expresión del case para obtener su tipo y valor (si es constante)
+            object exprTypeResult = Visit(context.expr());
+
+            if (!(exprTypeResult is int caseExprType))
+            {
+                Errors.Add($"Error semántico: La expresión del 'case' no pudo ser evaluada a un tipo válido (línea {context.Start.Line}).");
+                return null;
+            }
+
+            // 2. Verificar que el tipo de la expresión del case coincida con el tipo de la expresión del switch
+            if (currentSwitchExprType != TablaSimbolos.UnknownType && caseExprType != currentSwitchExprType)
+            {
+                Errors.Add($"Error semántico: El tipo de la expresión del 'case' ('{TablaSimbolos.TypeToString(caseExprType)}') no coincide con el tipo de la expresión del 'switch' ('{TablaSimbolos.TypeToString(currentSwitchExprType)}') (línea {context.Start.Line}).");
+            }
+
+            // 3. Verificar que la expresión del case sea una constante.
+            // Esta parte requiere que VisitExpr y sus subcomponentes (VisitFactor, etc.)
+            // puedan determinar si un valor es constante.
+            // Para una implementación "mínima" según la imagen, nos enfocamos en el tipo.
+            // La validación de "constante" completa es más avanzada y requeriría
+            // modificaciones significativas en cómo VisitExpr/VisitFactor devuelven información.
+            // Si solo aceptas literales, entonces la presencia de un literal ya implica "constante".
+            // Para el ejemplo, asumo que 'expr' en 'case' solo contendrá literales directamente.
+            // Si no es un literal, podrías añadir un error aquí:
+            // if (!(context.expr().GetChild(0) is MiniCSharpParser.FactorContext factor &&
+            //       (factor is MiniCSharpParser.IntLitFactorContext || factor is MiniCSharpParser.CharLitFactorContext)))
+            // {
+            //     Errors.Add($"Error semántico: La expresión del 'case' debe ser un valor literal constante (línea {context.Start.Line}).");
+            // }
+
+            Console.WriteLine($"Checker DBG: Expresión de case de tipo {TablaSimbolos.TypeToString(caseExprType)}.");
+
+            return null;
         }
 
         public override object VisitDefaultLabel(MiniCSharpParser.DefaultLabelContext context)
         {
-            return base.VisitDefaultLabel(context);
+            // No hay una expresión para verificar en el default, simplemente se marca
+            Console.WriteLine($"Checker DBG: Encontrado label 'default'.");
+            return null;
         }
 
         public override object VisitBlockNode(MiniCSharpParser.BlockNodeContext context) // Hay que mejorarlo-------------
@@ -567,17 +1020,63 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitConditionNode(MiniCSharpParser.ConditionNodeContext context)
         {
-            return base.VisitConditionNode(context);
+            // Una condición (condition) se compone de uno o más "términos de condición" (condTerm)
+            // unidos por el operador OR (||).
+            // Visitamos cada 'condTerm' para asegurar que todos sean booleanos.
+            foreach (var condTermCtx in context.condTerm())
+            {
+                // Importante: 'Visit(condTermCtx)' llamará al método correcto: VisitConditionTermNode
+                object typeObj = Visit(condTermCtx);
+                if (typeObj is int type && type != TablaSimbolos.BoolType)
+                {
+                    Errors.Add($"Error: La expresión en el operador OR (||) debe ser booleana (línea {condTermCtx.Start.Line}).");
+                }
+            }
+            // El resultado de una condición (condition) siempre es de tipo booleano.
+            return TablaSimbolos.BoolType;
         }
 
-        public override object VisitConditionTermNode(MiniCSharpParser.ConditionTermNodeContext context)
+        public override object VisitConditionTermNode(MiniCSharpParser.ConditionTermNodeContext context) // ¡Nombre corregido aquí!
         {
-            return base.VisitConditionTermNode(context);
+            // Un "término de condición" (condTerm) se compone de uno o más "factores de condición" (condFact)
+            // unidos por el operador AND (&&).
+            // Visitamos cada 'condFact' para asegurar que todos sean booleanos.
+            foreach (var condFactCtx in context.condFact())
+            {
+                // Importante: 'Visit(condFactCtx)' llamará al método correcto: VisitConditionFactNode
+                object typeObj = Visit(condFactCtx);
+                if (typeObj is int type && type != TablaSimbolos.BoolType)
+                {
+                    Errors.Add($"Error: La expresión en el operador AND (&&) debe ser booleana (línea {condFactCtx.Start.Line}).");
+                }
+            }
+            // El resultado de un término de condición (condTerm) siempre es de tipo booleano.
+            return TablaSimbolos.BoolType;
         }
 
         public override object VisitConditionFactNode(MiniCSharpParser.ConditionFactNodeContext context)
         {
-            return base.VisitConditionFactNode(context);
+            // ... (código anterior si lo tenés) ...
+
+            object leftTypeObj = Visit(context.expr(0));
+            object rightTypeObj = Visit(context.expr(1));
+
+            // Corrección: Usa nombres de variables de patrón diferentes (ej: 'tl' para left, 'tr' para right)
+            int leftType = (leftTypeObj is int tl) ? tl : TablaSimbolos.UnknownType;
+            int rightType = (rightTypeObj is int tr) ? tr : TablaSimbolos.UnknownType;
+
+            // ... (resto de tu lógica de comprobación de tipos y retorno) ...
+
+            if (leftType == TablaSimbolos.UnknownType || rightType == TablaSimbolos.UnknownType)
+            {
+                // Si los tipos ya son desconocidos, no se hace más.
+            }
+            else if (leftType != rightType)
+            {
+                Errors.Add($"Error: Tipos incompatibles en la comparación relacional: '{TablaSimbolos.TypeToString(leftType)}' y '{TablaSimbolos.TypeToString(rightType)}' (línea {context.Start.Line}).");
+            }
+
+            return TablaSimbolos.BoolType;
         }
 
         public override object VisitExpression(MiniCSharpParser.ExpressionContext context) //--------Matey
@@ -887,89 +1386,137 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-            var firstToken = context.ID(0).Symbol;
+            // El designador siempre comienza con un ID (el nombre base de la variable, campo, o método).
+            IToken firstToken = context.ID(0).Symbol;
             string firstName = firstToken.Text;
+            int line = firstToken.Line; // Usamos la línea del primer token para errores iniciales
+
+            // 1. Buscar la entrada base en la tabla de símbolos.
             TablaSimbolos.Ident currentIdent = symbolTable.Buscar(firstName);
 
             if (currentIdent == null)
             {
-                Errors.Add($"Error: El nombre '{firstName}' no existe en el contexto actual (línea {firstToken.Line}).");
-                return null; 
+                Errors.Add($"Error: El identificador '{firstName}' no ha sido declarado (línea {line}).");
+                return null; // No se puede resolver el designador.
             }
 
-            int idIndex = 1;      
-            int exprIndex = 0;    
-            
+            // 2. Procesar las partes adicionales del designador (DOT ID o LBRACK expr RBRACK)
+            // Usamos índices para ID y expr porque context.ID() y context.expr() dan listas.
+            int idIndex = 1;   // ID(0) ya lo usamos, empezamos en ID(1) para miembros
+            int exprIndex = 0; // Para acceder a las expresiones de índice en un array
+
+            // Iteramos sobre todos los hijos del contexto del designador, saltándonos el primer ID.
+            // Los hijos serán DOT, LBRACK, ID de miembro, Expr de índice, RBRACK, etc.
             foreach (var suffix in context.children.Skip(1))
             {
-                if (currentIdent == null) return null; 
-                
-                if (suffix is ITerminalNode termNode && termNode.Symbol.Type == MiniCSharpLexer.DOT)
+                // Si en algún punto el identificador actual es nulo (por un error anterior en la cadena del designador),
+                // salimos para evitar NullReferenceException.
+                if (currentIdent == null) return null;
+
+                // Comprobamos si el hijo actual es un nodo terminal (un token como '.' o '[').
+                if (suffix is Antlr4.Runtime.Tree.ITerminalNode termNode)
                 {
-                    if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || varIdent.Type != TablaSimbolos.ClassType)
+                    // Acceso a miembro: obj.member
+                    if (termNode.Symbol.Type == MiniCSharpLexer.DOT)
                     {
-                        Errors.Add($"Error: El operador '.' solo se puede aplicar a un objeto de una clase, pero '{currentIdent.GetName()}' no lo es (línea {termNode.Symbol.Line}).");
-                        return null;
-                    }
-                    
-                    var varDeclCtx = varIdent.DeclCtx as MiniCSharpParser.VarDeclarationContext;
-                    if (varDeclCtx == null)
-                    {
-                        Errors.Add($"Error interno: El contexto de declaración para '{varIdent.GetName()}' no es un VarDeclarationContext.");
-                        return null;
-                    }
-                    
-                    var typeIdentCtx = varDeclCtx.type() as MiniCSharpParser.TypeIdentContext;
-                    if (typeIdentCtx == null)
-                    {
-                        Errors.Add($"Error interno: No se pudo encontrar el nodo de tipo para la variable '{varIdent.GetName()}'.");
-                        return null;
-                    }
-                    
-                    string className = typeIdentCtx.ID().GetText(); 
+                        // Verificar que el identificador actual sea una clase o un objeto de clase.
+                        // Tu primera versión comprueba si es 'ClassIdent'
+                        // Tu segunda versión comprueba si es 'VarIdent' cuyo 'Type' es 'ClassType'
+                        // La segunda versión es más robusta porque una variable de clase es una VarIdent.
+                        if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || varIdent.Type != TablaSimbolos.ClassType)
+                        {
+                            Errors.Add($"Error: El operador '.' solo se puede aplicar a un objeto de una clase, pero '{currentIdent.GetName()}' no lo es (línea {termNode.Symbol.Line}).");
+                            return null;
+                        }
 
-                    var classDef = symbolTable.Buscar(className) as TablaSimbolos.ClassIdent;
-                    if (classDef == null)
-                    {
-                        Errors.Add($"Error: La clase '{className}' no ha sido definida (línea {varIdent.Token.Line}).");
-                        return null;
-                    }
+                        // Necesitamos el ClassIdent que define la estructura de la clase
+                        // La segunda versión tiene una lógica más completa para obtener el ClassIdent desde VarIdent.DeclCtx
+                        TablaSimbolos.ClassIdent classDef = null;
+                        if (varIdent.DeclCtx is MiniCSharpParser.VarDeclarationContext varDeclCtx)
+                        {
+                            if (varDeclCtx.type() is MiniCSharpParser.TypeIdentContext typeIdentCtx)
+                            {
+                                string className = typeIdentCtx.ID().GetText();
+                                classDef = symbolTable.Buscar(className) as TablaSimbolos.ClassIdent;
+                            }
+                        }
+                        
+                        if (classDef == null)
+                        {
+                            Errors.Add($"Error interno: No se pudo resolver la definición de clase para '{varIdent.GetName()}' (línea {varIdent.Token.Line}).");
+                            return null;
+                        }
 
-                    string fieldName = context.ID(idIndex++).GetText();
-                    var memberIdent = classDef.Members.Buscar(fieldName);
-                    if (memberIdent == null)
-                    {
-                        Errors.Add($"Error: La clase '{className}' no contiene una definición para '{fieldName}' (línea {termNode.Symbol.Line}).");
-                        return null;
+                        // Obtener el nombre del miembro (el ID después del DOT)
+                        // Usamos idIndex para obtener el siguiente ID de la lista context.ID()
+                        string fieldName = context.ID(idIndex++)?.GetText();
+                        if (string.IsNullOrEmpty(fieldName)) // Si no hay ID después del DOT, es un error sintáctico o de estructura de árbol
+                        {
+                            Errors.Add($"Error: Se esperaba un nombre de miembro después de '.' (línea {termNode.Symbol.Line}).");
+                            return null;
+                        }
+
+                        // Buscar el miembro en la tabla de símbolos de la clase.
+                        TablaSimbolos.Ident memberIdent = classDef.Members.Buscar(fieldName);
+                        if (memberIdent == null)
+                        {
+                            Errors.Add($"Error: La clase '{classDef.GetName()}' no contiene una definición para el miembro '{fieldName}' (línea {termNode.Symbol.Line}).");
+                            return null;
+                        }
+
+                        currentIdent = memberIdent; // El nuevo identificador actual es el miembro encontrado
                     }
-                    
-                    currentIdent = memberIdent;
+                    // Acceso a array: arr[index]
+                    else if (termNode.Symbol.Type == MiniCSharpLexer.LBRACK)
+                    {
+                        // Verificar que el identificador actual sea una variable de tipo array.
+                        if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || !varIdent.IsArray)
+                        {
+                            Errors.Add($"Error: Solo se pueden indexar arrays. '{currentIdent.GetName()}' no es un array (línea {termNode.Symbol.Line}).");
+                            return null;
+                        }
+
+                        // Obtener la expresión del índice
+                        MiniCSharpParser.ExprContext indexExprCtx = context.expr(exprIndex++);
+                        if (indexExprCtx == null)
+                        {
+                            Errors.Add($"Error: Se esperaba una expresión de índice después de '[' (línea {termNode.Symbol.Line}).");
+                            return null;
+                        }
+
+                        // Visitar la expresión para obtener su tipo.
+                        object indexTypeResult = Visit(indexExprCtx);
+                        int indexType = (indexTypeResult is int t) ? t : TablaSimbolos.UnknownType;
+
+                        // Verificar que el tipo del índice sea int.
+                        if (indexType != TablaSimbolos.IntType)
+                        {
+                            Errors.Add($"Error: El índice de un array debe ser una expresión de tipo 'int', no '{TablaSimbolos.TypeToString(indexType)}' (línea {indexExprCtx.Start.Line}).");
+                            return null;
+                        }
+                        
+                        // IMPORTANTE: Cuando se accede a un elemento de un array, el resultado ya no es un array.
+                        // Si tu VarIdent tiene un campo para el "tipo base" del array, úsalo aquí.
+                        // Aquí, asumo que `varIdent.Type` ya es el tipo base del array.
+                        currentIdent = new TablaSimbolos.VarIdent(
+                            varIdent.Token,
+                            varIdent.Type, // El tipo de la variable original (ej: int si es int[]).
+                            false,         // isArray: false, porque ya accedimos a un elemento.
+                            varIdent.DeclCtx,
+                            varIdent.Nivel
+                        );
+                    }
+                    // Si llegamos a un token que no es DOT ni LBRACK aquí, y no es el primer ID,
+                    // podría ser un RBRACK u otro token que no esperábamos.
+                    // La estructura del bucle `foreach (var suffix in context.children.Skip(1))` es propensa a esto
+                    // si la gramática de ANTLR no agrupa el DOT ID y LBRACK expr RBRACK como un único 'suffix' context.
+                    // Por eso, la comprobación explícita `if (suffix is ITerminalNode termNode)` es crucial.
                 }
-                else if (suffix is ITerminalNode brackNode && brackNode.Symbol.Type == MiniCSharpLexer.LBRACK)
-                {
-                    if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || !varIdent.IsArray)
-                    {
-                        Errors.Add($"Error: Solo se pueden indexar arrays. '{currentIdent.GetName()}' no es un array (línea {brackNode.Symbol.Line}).");
-                        return null;
-                    }
-
-                    var indexExprCtx = context.expr(exprIndex++);
-                    object indexTypeResult = Visit(indexExprCtx);
-                    if (!(indexTypeResult is int indexType) || indexType != TablaSimbolos.IntType)
-                    {
-                        Errors.Add($"Error: El índice de un array debe ser una expresión de tipo 'int', no '{TablaSimbolos.TypeToString(indexTypeResult is int ? (int)indexTypeResult : -1)}' (línea {indexExprCtx.Start.Line}).");
-                    }
-
-                    currentIdent = new TablaSimbolos.VarIdent(
-                        currentIdent.Token,
-                        currentIdent.Type,      
-                        currentIdent.Nivel,
-                        isArray: false,         
-                        currentIdent.DeclCtx
-                    );
-                }
+                // Nota: No necesitamos manejar el RBRACK explícitamente como un sufijo en el bucle
+                // porque ya se "consume" como parte de la regla LBRACK expr RBRACK.
             }
-            
+
+            // Devolvemos la entrada final resuelta del designador (el Ident de la variable, campo o elemento de array).
             return currentIdent;
         }
 
@@ -988,9 +1535,36 @@ namespace MiniCSharp.Grammar.Checker
             return base.VisitChildren(node);
         }
 
-        public override object VisitTerminal(ITerminalNode node)
+        public override object VisitTerminal(Antlr4.Runtime.Tree.ITerminalNode node)
         {
-            return base.VisitTerminal(node);
+            // Obtener el tipo de token (un número que representa el token del lexer, ej: MiniCSharpLexer.ID)
+            int tokenType = node.Symbol.Type;
+            // Obtener el texto del token (ej: "i", "limit", "Write")
+            string tokenText = node.GetText();
+            // Obtener la línea donde se encuentra el token en el código fuente
+            int line = node.Symbol.Line;
+
+            // *** ¡LÓGICA CRÍTICA! ***
+            // Solo si el token es un 'ID' (un identificador genérico definido por el usuario),
+            // debemos buscarlo en la tabla de símbolos.
+            // Las palabras clave (como 'Write', 'if', 'for', 'class', etc.) tienen sus propios tipos de token
+            // (ej: MiniCSharpLexer.WRITE, MiniCSharpLexer.IF) y NO deben ser buscadas aquí.
+            if (tokenType == MiniCSharpLexer.ID) // <-- ¡Asegúrate que MiniCSharpLexer.ID es el tipo de token para tu regla 'ID' en el lexer!
+            {
+                // Buscar el identificador en la tabla de símbolos del checker.
+                var entry = symbolTable.Buscar(tokenText); // Asumo que 'symbolTable' es tu instancia de TablaSimbolos.
+                if (entry == null)
+                {
+                    // Si el identificador no se encuentra, reporta un error.
+                    Errors.Add($"Error: El identificador '{tokenText}' no ha sido declarado (línea {line}).");
+                }
+            }
+
+            // Para la mayoría de los terminales (incluyendo palabras clave que no son ID),
+            // no necesitamos hacer nada más aquí, ya que su contexto lo manejan los Visit...Statement.
+            // Este método solo se preocupa de validar que los ID genéricos estén declarados.
+
+            return null; // Los nodos terminales no devuelven un tipo de valor al árbol sintáctico.
         }
 
         public override object VisitErrorNode(IErrorNode node)
