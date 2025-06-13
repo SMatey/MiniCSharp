@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic;
-using Antlr4.Runtime;
+using System.Reflection;
 using MiniCSharp.Grammar.Checker;
 using MiniCSharp.Grammar.encoder;
 using parser.generated;
@@ -13,6 +12,7 @@ namespace MiniCSharp
         static void Main(string[] args)
         {
             var filePath = "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\testCodeGen1.txt"; 
+            var outputDllName = "output.dll";
 
             if (!File.Exists(filePath))
             {
@@ -20,36 +20,21 @@ namespace MiniCSharp
                 return;
             }
 
+            // --- FASE 1 & 2: PARSING Y CHECKING ---
+            Console.WriteLine("--- Fase de Compilación ---");
             try
             {
                 var input = File.ReadAllText(filePath);
-                var inputStream = new AntlrInputStream(input);
+                var inputStream = new Antlr4.Runtime.AntlrInputStream(input);
                 var lexer = new MiniCSharpLexer(inputStream);
-                var tokens = new CommonTokenStream(lexer);
+                var tokens = new Antlr4.Runtime.CommonTokenStream(lexer);
                 var parser = new MiniCSharpParser(tokens);
-
-                parser.RemoveErrorListeners(); 
-                var syntaxErrorListener = new SyntaxErrorListener();
-                parser.AddErrorListener(syntaxErrorListener);
-
-                MiniCSharpParser.ProgramContext tree = parser.program(); 
-
-                if (syntaxErrorListener.HasErrors)
-                {
-                    Console.WriteLine("Errores de sintaxis detectados por el parser. Compilación detenida.");
-                    foreach (var error in syntaxErrorListener.ErrorMessages)
-                    {
-                        Console.WriteLine(error);
-                    }
-                    return; 
-                }
-
-                Console.WriteLine("Análisis sintáctico completado sin errores.");
+                var tree = parser.program();
                 
-                // --- FASE 2: ANÁLISIS SEMÁNTICO (CHECKER) ---
-                Console.WriteLine("\nIniciando análisis semántico (Checker)...");
-                MiniCsharpChecker checker = new MiniCsharpChecker();
-                checker.Visit(tree); 
+                // (Opcional: puedes añadir el listener de errores de sintaxis aquí si quieres)
+
+                var checker = new MiniCsharpChecker();
+                checker.Visit(tree);
 
                 if (checker.Errors.Count > 0)
                 {
@@ -58,41 +43,58 @@ namespace MiniCSharp
                     {
                         Console.WriteLine(error);
                     }
-                    return; // Detener si hay errores semánticos
+                    return;
                 }
+                Console.WriteLine("Análisis sintáctico y semántico completado sin errores.");
                 
-                Console.WriteLine("\nAnálisis semántico (Checker) completado sin errores reportados.");
-
                 // --- FASE 3: GENERACIÓN DE CÓDIGO ---
                 Console.WriteLine("\nIniciando generación de código...");
-                
-                // 1. Crear una instancia del CodeGen, pasándole el nombre del archivo de salida.
-                var outputFileName = "output.exe";
-                CodeGen codeGenerator = new CodeGen(outputFileName);
-
-                // 2. Visitar el árbol para generar el código CIL en memoria.
+                CodeGen codeGenerator = new CodeGen(outputDllName);
                 codeGenerator.Visit(tree);
-
-                // 3. Guardar el ensamblado generado en un archivo .exe.
                 codeGenerator.SaveAssembly();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"\nError inesperado durante la compilación: {ex.Message}");
                 Console.WriteLine(ex.StackTrace);
+                return;
             }
-        }
-    }
 
-    // Clase auxiliar para capturar errores de sintaxis del parser (sin cambios)
-    public class SyntaxErrorListener : BaseErrorListener
-    {
-        public List<string> ErrorMessages { get; } = new List<string>();
-        public bool HasErrors => ErrorMessages.Count > 0;
+            // --- FASE 4: EJECUCIÓN DE LA DLL GENERADA ---
+            Console.WriteLine("\n--- Fase de Ejecución ---");
+            try
+            {
+                Assembly generatedAssembly = Assembly.LoadFrom(Path.GetFullPath(outputDllName));
+                Type? programType = generatedAssembly.GetType("CodeGenTest"); // Asegúrate que coincida con el nombre de la clase en test.txt
+                
+                if (programType != null)
+                {
+                    MethodInfo? mainMethod = programType.GetMethod("Main");
+                    if (mainMethod != null)
+                    {
+                        Console.WriteLine("Ejecutando Main()...");
+                        object? result = mainMethod.Invoke(null, null);
 
-        public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
-        {
-            ErrorMessages.Add($"Error de sintaxis en línea {line}:{charPositionInLine} -> {msg} (token: '{offendingSymbol?.Text}')");
+                        if (mainMethod.ReturnType != typeof(void))
+                        {
+                            Console.WriteLine($"Main() devolvió: {result}");
+                        }
+                        Console.WriteLine("Ejecución finalizada.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Error: No se encontró el método 'Main' en la clase generada.");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Error: No se encontró la clase principal en el ensamblado generado.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\nError durante la ejecución de la DLL: {ex.Message}");
+            }
         }
     }
 }

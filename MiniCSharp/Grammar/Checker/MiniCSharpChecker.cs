@@ -219,6 +219,7 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
+            // --- Pasos 1 y 2: Determinar firma e insertar método (tu código aquí es correcto) ---
             int returnTypeCode;
             IToken methodNameToken = context.ID().Symbol; 
 
@@ -228,14 +229,8 @@ namespace MiniCSharp.Grammar.Checker
             }
             else 
             {
-                MiniCSharpParser.TypeContext returnTypeContext = context.type(); 
-                if (returnTypeContext == null) 
-                {
-                    Errors.Add($"Error: Falta el tipo de retorno para el método '{methodNameToken.Text}' (línea {methodNameToken.Line}).");
-                    return null;
-                }
-
-                object typeResult = Visit(returnTypeContext); 
+                // ... (tu lógica para obtener el tipo de retorno es correcta) ...
+                object typeResult = Visit(context.type()); 
                 if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
                 {
                     Errors.Add($"Error: Tipo de retorno inválido o desconocido para el método '{methodNameToken.Text}' (línea {methodNameToken.Line}).");
@@ -257,20 +252,27 @@ namespace MiniCSharp.Grammar.Checker
                 return null;
             }
             
+            // --- LÓGICA CORREGIDA ---
+            
+            // 3. Establecer el método actual ANTES de procesar su contenido.
             this.currentProcessingMethod = methodIdent;
             
             symbolTable.OpenScope();
-            this.currentMethodBodyScopeLevel = symbolTable.NivelActual;
+            // this.currentMethodBodyScopeLevel = symbolTable.NivelActual; // Esta línea es más para CodeGen, pero no hace daño
 
+            // 4. Visitar los parámetros Y el cuerpo del método.
+            // _currentProcessingMethod permanecerá activo durante estas visitas.
             if (context.formPars() != null)
             {
                 Visit(context.formPars()); 
             }
 
-            this.currentProcessingMethod = null;
-
             Visit(context.block());
+
             symbolTable.CloseScope();
+
+            // 5. Limpiar el método actual DESPUÉS de haber procesado todo su contenido.
+            this.currentProcessingMethod = null;
 
             return null;
         }

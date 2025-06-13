@@ -220,43 +220,63 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
-            var paramTypes = new List<Type>();
+             // --- 1. Obtener Tipos para la Firma del Método ---
+            var paramInfo = new List<(Type type, string name)>(); // Guardará tipo y nombre
             if (context.formPars() != null)
             {
                 var result = Visit(context.formPars());
-                if (result is List<Type> types)
+                if (result is List<(Type, string)> info)
                 {
-                    paramTypes = types;
+                    paramInfo = info;
                 }
             }
+            var paramTypes = paramInfo.Select(p => p.type).ToArray(); // Extraer solo los tipos para la firma
 
             Type returnType = (context.VOID() != null) ? typeof(void) : GetTypeFromTypeName(context.type().GetText());
 
+            // --- 2. Definir el Método ---
             string methodName = context.ID().GetText();
             MethodBuilder methodBuilder = _typeBuilder.DefineMethod(
                 methodName,
                 MethodAttributes.Public | MethodAttributes.Static,
                 returnType,
-                paramTypes.ToArray()
+                paramTypes
             );
-
             _currentMethod = methodBuilder;
 
             if (methodName == "Main")
             {
                 _mainMethodBuilder = methodBuilder;
             }
-
+            
             _ilGenerator = methodBuilder.GetILGenerator();
 
-            OpenScope(); // Abrir el ámbito principal del método
+            // --- 3. Declarar Parámetros como Variables Locales/Argumentos ---
+            OpenScope(); // Abrir ámbito para parámetros y locales.
 
-            // Aquí aún no procesamos los parámetros para declararlos como variables, lo haremos después.
-    
-            Visit(context.block()); // Visitar el cuerpo del método
+            // Asignar nombres a los parámetros y declararlos en el ámbito para poder usarlos.
+            for (int i = 0; i < paramInfo.Count; i++)
+            {
+                var (type, name) = paramInfo[i];
+                methodBuilder.DefineParameter(i + 1, ParameterAttributes.None, name);
+                
+                // Los parámetros se tratan como variables locales especiales (argumentos).
+                // Los declaramos en nuestro sistema de ámbitos para poder encontrarlos después.
+                // NOTA: Para argumentos estáticos, su índice CIL empieza en 0.
+                // Si fueran métodos de instancia, empezarían en 1 (el 0 es 'this').
+                var localBuilder = _ilGenerator.DeclareLocal(type);
+                localBuilder.SetLocalSymInfo(name); // Opcional: para depuración
+                _scopedLocalVariables.Last()[name] = localBuilder;
+                _ilGenerator.Emit(OpCodes.Ldarg, i); // Cargar argumento
+                _ilGenerator.Emit(OpCodes.Stloc, localBuilder); // Guardar en variable local
+            }
 
-            CloseScope(); // Cerrar el ámbito principal del método
+            // --- 4. Visitar el Cuerpo del Método ---
+            Visit(context.block());
 
+            CloseScope(); 
+
+            // --- 5. Finalizar ---
             _ilGenerator.Emit(OpCodes.Ret);
             _ilGenerator = null;
             _currentMethod = null;
@@ -266,18 +286,19 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitFormalParams(MiniCSharpParser.FormalParamsContext context)
         {
-            var paramTypes = new List<Type>();
-            // La regla 'formPars' tiene una lista de 'type'. Iteramos sobre ella.
+            // Ahora devolvemos una lista de tuplas (Tipo, Nombre)
+            var paramInfo = new List<(Type, string)>();
             var typeNodes = context.type();
+            var idNodes = context.ID();
 
-            foreach (var typeCtx in typeNodes)
+            for (int i = 0; i < idNodes.Length; i++)
             {
-                // Usamos nuestro método auxiliar para convertir cada nombre de tipo
-                paramTypes.Add(GetTypeFromTypeName(typeCtx.GetText()));
+                Type paramType = GetTypeFromTypeName(typeNodes[i].GetText());
+                string paramName = idNodes[i].GetText();
+                paramInfo.Add((paramType, paramName));
             }
-
-            // Devolvemos la lista de tipos de .NET para la firma del método.
-            return paramTypes;
+    
+            return paramInfo;;
         }
 
         public override object VisitTypeIdent(MiniCSharpParser.TypeIdentContext context)
@@ -312,7 +333,21 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitReturnStatement(MiniCSharpParser.ReturnStatementContext context)
         {
-            return base.VisitReturnStatement(context);
+            // La regla es: "return" [ expr ] ";"
+            if (context.expr() != null)
+            {
+                // Si hay una expresión, la visitamos. Esto dejará su valor
+                // en la cima de la pila de evaluación CIL.
+                Visit(context.expr());
+            }
+
+            // La instrucción 'ret' se emite al final del método en VisitMethodDeclaration,
+            // por lo que aquí no es estrictamente necesario emitirla de nuevo si es la última
+            // sentencia. Sin embargo, si hubiera código después de un return, necesitaríamos
+            // un salto. Por ahora, visitar la expresión es suficiente, ya que el 'ret'
+            // principal al final del método usará el valor que dejamos en la pila.
+    
+            return null;
         }
 
         public override object VisitReadStatement(MiniCSharpParser.ReadStatementContext context)
@@ -437,7 +472,45 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitTermNode(MiniCSharpParser.TermNodeContext context)
         {
-            return base.VisitTermNode(context);
+            // 1. Visita el primer 'factor'.
+            // Esto ejecutará uno de nuestros métodos Visit...Factor, que pondrá
+            // el valor de ese factor (ej. un número, el valor de una variable) en la cima de la pila CIL.
+            Visit(context.factor(0));
+
+            // 2. Itera sobre el resto de los factores y operadores.
+            // La regla es: factor (MULOP factor)*
+            int operatorCount = context.MULOP().Length;
+            for (int i = 0; i < operatorCount; i++)
+            {
+                // Visita el siguiente 'factor' para poner su valor en la pila.
+                // Ahora la pila tiene dos valores: [valor1, valor2]
+                Visit(context.factor(i + 1));
+
+                // Obtiene el operador y emite la instrucción CIL correspondiente.
+                IToken op = context.MULOP(i).Symbol;
+
+                switch (op.Text)
+                {
+                    case "*":
+                        // Emite la instrucción de multiplicación. Toma los dos valores de la
+                        // pila, los multiplica, y pone el resultado de vuelta en la pila.
+                        _ilGenerator.Emit(OpCodes.Mul);
+                        break;
+                    case "/":
+                        // Emite la instrucción de división.
+                        _ilGenerator.Emit(OpCodes.Div);
+                        break;
+                    case "%":
+                        // Emite la instrucción de módulo/resto.
+                        _ilGenerator.Emit(OpCodes.Rem);
+                        break;
+                }
+            }
+
+            // Al final de este método, el resultado del 'término' completo
+            // (ej. 5 * 2 / 3) se encuentra en la cima de la pila, listo para ser
+            // usado por VisitExpression o guardado en una variable.
+            return null;
         }
 
         public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context)

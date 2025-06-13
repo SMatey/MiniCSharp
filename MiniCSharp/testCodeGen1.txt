@@ -1,20 +1,11 @@
-// test.txt - Prueba para CodeGen Tarea 1
-class TesteGenBasico
+// test.txt - Prueba Final de Tarea 1
+class CodeGenTest
 {
-    // Método Main vacío. Esto es suficiente para probar que se puede
-    // crear la clase, el método y el punto de entrada del .exe.
-    void Main() 
+    // Hacemos que Main devuelva un 'int' para poder verificar el resultado.
+    int Main() 
     {
-        int x;
-        bool y;
-        string z;
-
-        // Aún no podemos probar asignaciones como 'x = 10;'.
-        // Solo las declaraciones.
-    }
-
-    // Otro método para asegurar que se definen múltiples métodos.
-    void OtroMetodo()
-    {
+        // Esta línea prueba que Visit...LitFactor y VisitTermNode funcionan.
+        // El resultado de 10 * 5 / 2 es 25.
+        return 10 * 5 / 2;
     }
 }

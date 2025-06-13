@@ -5,29 +5,11 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.13.1" />
     <PackageReference Include="Lokad.ILPack" Version="0.3.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Grammar\MiniCSharpLexer.g4" />
-    <Content Include="Grammar\MiniCSharpParser.g4" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Grammar\Checker\MiniCSharpChecker.cs" />
-    <Compile Include="Grammar\Checker\TablaSimbolos.cs" />
-    <Compile Include="Grammar\encoder\CodeGen.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Grammar\parser\generated\**\*.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Grammar\parser\generated\" />
   </ItemGroup>
 
 </Project>
