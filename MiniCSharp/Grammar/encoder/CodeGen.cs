@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
-using System.IO; // Necesario para la clase Path
+using System.IO; 
 using System.Reflection;
 using System.Reflection.Emit;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
-using Lokad.ILPack; // Necesario para el AssemblyGenerator
+using Lokad.ILPack; 
 using parser.generated;
+using System.Globalization;
 
 namespace MiniCSharp.Grammar.encoder
 {
@@ -19,7 +20,12 @@ namespace MiniCSharp.Grammar.encoder
         private readonly ModuleBuilder _moduleBuilder;
         private TypeBuilder _typeBuilder;
         private ILGenerator _ilGenerator;
+        private MethodBuilder _currentMethod;
+        private readonly List<Dictionary<string, LocalBuilder>> _scopedLocalVariables;
 
+        // Referencia al constructor de la clase y al método Main
+        private MethodBuilder _mainMethodBuilder;
+        
         // Diccionario para registrar variables locales
         private readonly Dictionary<ParserRuleContext, LocalBuilder> _localVariables;
 
@@ -28,25 +34,68 @@ namespace MiniCSharp.Grammar.encoder
         /// </summary>
         public CodeGen(string outputFileName)
         {
-            // --- INICIALIZACIÓN DE LOS CAMPOS EN EL CONSTRUCTOR ---
-            this._outputFileName = outputFileName;
+             this._outputFileName = outputFileName;
             _assemblyName = new AssemblyName(Path.GetFileNameWithoutExtension(outputFileName));
             
-            _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(_assemblyName, AssemblyBuilderAccess.RunAndCollect);
-            _moduleBuilder = _assemblyBuilder.DefineDynamicModule(_outputFileName);
-            
-            // Inicializa el diccionario para las variables locales
+            _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(_assemblyName, AssemblyBuilderAccess.Run);
+
+            _moduleBuilder = _assemblyBuilder.DefineDynamicModule(outputFileName);
+    
             _localVariables = new Dictionary<ParserRuleContext, LocalBuilder>();
+            
+            _scopedLocalVariables = new List<Dictionary<string, LocalBuilder>>();
         }
         
-        /// <summary>
-        /// Método para guardar el ensamblado generado en un archivo.
-        /// </summary>
+        // --- MÉTODOS AUXILIARES PARA GESTIÓN DE ÁMBITOS ---
+        private void OpenScope()
+        {
+            _scopedLocalVariables.Add(new Dictionary<string, LocalBuilder>());
+        }
+
+        private void CloseScope()
+        {
+            if (_scopedLocalVariables.Count > 0)
+            {
+                _scopedLocalVariables.RemoveAt(_scopedLocalVariables.Count - 1);
+            }
+        }
+
+        private LocalBuilder DeclareLocal(string name, Type type)
+        {
+            // El ámbito actual es el último diccionario de la lista.
+            var currentScope = _scopedLocalVariables.LastOrDefault();
+            if (currentScope == null)
+            {
+                // No debería pasar si siempre se llama dentro de un ámbito abierto (ej. un método).
+                throw new InvalidOperationException("No se puede declarar una variable fuera de un ámbito.");
+            }
+            if (currentScope.ContainsKey(name))
+            {
+                // El checker ya debería haber detectado esto, pero es una buena defensa.
+                throw new InvalidOperationException($"La variable '{name}' ya está definida en el ámbito actual.");
+            }
+
+            LocalBuilder localBuilder = _ilGenerator.DeclareLocal(type);
+            currentScope[name] = localBuilder;
+            return localBuilder;
+        }
+
+        private LocalBuilder FindLocal(string name)
+        {
+            // Buscar desde el ámbito más interno hacia el más externo.
+            foreach (var scope in Enumerable.Reverse(_scopedLocalVariables))
+            {
+                if (scope.TryGetValue(name, out LocalBuilder localBuilder))
+                {
+                    return localBuilder;
+                }
+            }
+            return null; // No encontrada
+        }
         public void SaveAssembly()
         {
             try
             {
-                // El objetivo es crear un archivo ejecutable que se pueda correr en consola
                 var generator = new AssemblyGenerator();
                 generator.GenerateAssembly(_assemblyBuilder, _outputFileName);
                 Console.WriteLine($"Ensamblado '{_outputFileName}' generado exitosamente.");
@@ -59,8 +108,27 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitProg(MiniCSharpParser.ProgContext context)
         {
-            // TODO: Aquí implementaremos la creación de la clase principal
-            return base.VisitProg(context);
+            string className = context.ID().GetText();
+
+            _typeBuilder = _moduleBuilder.DefineType(className, TypeAttributes.Public | TypeAttributes.Class);
+    
+            if (context.children != null)
+            {
+                foreach (var child in context.children)
+                {
+                    if (child is MiniCSharpParser.VarDeclarationContext ||
+                        child is MiniCSharpParser.ClassDeclarationContext ||
+                        child is MiniCSharpParser.MethodDeclarationContext)
+                    {
+                        Visit(child);
+                    }
+                }
+            }
+    
+            // Finalizamos la creación del tipo. Después de esto, no se le pueden añadir más métodos o campos.
+            _typeBuilder.CreateType();
+    
+            return null; 
         }
 
         public override object VisitUsingStat(MiniCSharpParser.UsingStatContext context)
@@ -75,22 +143,141 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitVarDeclaration(MiniCSharpParser.VarDeclarationContext context)
         {
-            return base.VisitVarDeclaration(context);
+            // Esta implementación es para VARIABLES LOCALES (dentro de un método).
+            if (_ilGenerator == null)
+            {
+                // TODO: Manejar declaración de campos de clase (variables globales).
+                return null;
+            }
+
+            // 1. Obtener el tipo de .NET para la variable.
+            Type varType = GetTypeFromTypeName(context.type().GetText());
+
+            // 2. Obtener los nodos de los identificadores.
+            ITerminalNode[] idNodes = context.ID();
+
+            // 3. Iterar sobre la lista de nodos.
+            if (idNodes != null)
+            {
+                foreach (ITerminalNode idNode in idNodes)
+                {
+                    IToken idToken = idNode.Symbol;
+
+                    string varName = idToken.Text;
+
+                    DeclareLocal(varName, varType);
+            
+                    // Console.WriteLine($"CodeGen DBG: Declarada variable local '{varName}' de tipo {varType.Name}");
+                }
+            }
+
+            return null;
         }
 
         public override object VisitClassDeclaration(MiniCSharpParser.ClassDeclarationContext context)
         {
             return base.VisitClassDeclaration(context);
         }
+        
+        /// <summary>
+        /// Convierte un nombre de tipo de MiniCSharp a un tipo de .NET para Reflection.Emit.
+        /// </summary>
+        private Type GetTypeFromTypeName(string typeName)
+        {
+            // Manejo básico para arrays.
+            bool isArray = typeName.EndsWith("[]");
+            if (isArray)
+            {
+                typeName = typeName.Replace("[]", "");
+            }
+
+            Type resultType;
+            switch (typeName)
+            {
+                case "int":
+                    resultType = typeof(int);
+                    break;
+                case "double":
+                    resultType = typeof(double);
+                    break;
+                case "char":
+                    resultType = typeof(char);
+                    break;
+                case "bool":
+                    resultType = typeof(bool);
+                    break;
+                case "string":
+                    resultType = typeof(string);
+                    break;
+                default:
+                    resultType = typeof(object); 
+                    break;
+            }
+
+            // Si era un array, devolvemos el tipo de array correspondiente (ej. int[]).
+            return isArray ? resultType.MakeArrayType() : resultType;
+        }
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
-            return base.VisitMethodDeclaration(context);
+            var paramTypes = new List<Type>();
+            if (context.formPars() != null)
+            {
+                var result = Visit(context.formPars());
+                if (result is List<Type> types)
+                {
+                    paramTypes = types;
+                }
+            }
+
+            Type returnType = (context.VOID() != null) ? typeof(void) : GetTypeFromTypeName(context.type().GetText());
+
+            string methodName = context.ID().GetText();
+            MethodBuilder methodBuilder = _typeBuilder.DefineMethod(
+                methodName,
+                MethodAttributes.Public | MethodAttributes.Static,
+                returnType,
+                paramTypes.ToArray()
+            );
+
+            _currentMethod = methodBuilder;
+
+            if (methodName == "Main")
+            {
+                _mainMethodBuilder = methodBuilder;
+            }
+
+            _ilGenerator = methodBuilder.GetILGenerator();
+
+            OpenScope(); // Abrir el ámbito principal del método
+
+            // Aquí aún no procesamos los parámetros para declararlos como variables, lo haremos después.
+    
+            Visit(context.block()); // Visitar el cuerpo del método
+
+            CloseScope(); // Cerrar el ámbito principal del método
+
+            _ilGenerator.Emit(OpCodes.Ret);
+            _ilGenerator = null;
+            _currentMethod = null;
+
+            return null;
         }
 
         public override object VisitFormalParams(MiniCSharpParser.FormalParamsContext context)
         {
-            return base.VisitFormalParams(context);
+            var paramTypes = new List<Type>();
+            // La regla 'formPars' tiene una lista de 'type'. Iteramos sobre ella.
+            var typeNodes = context.type();
+
+            foreach (var typeCtx in typeNodes)
+            {
+                // Usamos nuestro método auxiliar para convertir cada nombre de tipo
+                paramTypes.Add(GetTypeFromTypeName(typeCtx.GetText()));
+            }
+
+            // Devolvemos la lista de tipos de .NET para la firma del método.
+            return paramTypes;
         }
 
         public override object VisitTypeIdent(MiniCSharpParser.TypeIdentContext context)
@@ -205,7 +392,17 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitBlockNode(MiniCSharpParser.BlockNodeContext context)
         {
-            return base.VisitBlockNode(context);
+            // La regla de C# es que cada bloque introduce un nuevo ámbito para variables.
+            // Ej: una variable declarada en un 'if' no existe fuera de él.
+            OpenScope();
+
+            // Visitamos todas las declaraciones de variables y sentencias dentro del bloque.
+            // base.VisitChildren(context) hace esto por nosotros en el orden correcto.
+            base.VisitChildren(context);
+
+            CloseScope();
+    
+            return null;
         }
 
         public override object VisitActualParams(MiniCSharpParser.ActualParamsContext context)
@@ -250,37 +447,69 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context)
         {
-            return base.VisitIntLitFactor(context);
+            // Las constantes de tipo "int" se manejan en la gramática. 
+            int value = int.Parse(context.INTLIT().GetText());
+            // Ldc_I4 carga una constante entera de 4 bytes en la pila.
+            _ilGenerator.Emit(OpCodes.Ldc_I4, value);
+            return null;
         }
 
         public override object VisitDoubleLitFactor(MiniCSharpParser.DoubleLitFactorContext context)
         {
-            return base.VisitDoubleLitFactor(context);
+            // Las constantes de tipo "double" se manejan en la gramática. 
+            // Usamos InvariantCulture para asegurar que el punto '.' sea siempre el separador decimal.
+            double value = double.Parse(context.DOUBLELIT().GetText(), CultureInfo.InvariantCulture);
+            // Ldc_R8 carga una constante flotante de 8 bytes (un double) en la pila.
+            _ilGenerator.Emit(OpCodes.Ldc_R8, value);
+            return null;
         }
 
         public override object VisitCharLitFactor(MiniCSharpParser.CharLitFactorContext context)
         {
-            return base.VisitCharLitFactor(context);
+            // Las constantes de tipo "char" se manejan en la gramática. 
+            string text = context.CHARLIT().GetText();
+            // Quitamos las comillas simples de los lados, ej. 'a' -> a
+            char value = text.Substring(1, text.Length - 2)[0];
+            // Los 'char' se cargan como enteros (su valor numérico Unicode).
+            _ilGenerator.Emit(OpCodes.Ldc_I4, (int)value);
+            return null;
         }
 
         public override object VisitStringLitFactor(MiniCSharpParser.StringLitFactorContext context)
         {
-            return base.VisitStringLitFactor(context);
+            // Las constantes de tipo "string" se manejan en la gramática. 
+            string text = context.STRINGLIT().GetText();
+            // Quitamos las comillas dobles de los lados, ej. "hola" -> hola
+            string value = text.Substring(1, text.Length - 2);
+            // Ldstr carga una referencia a un objeto string en la pila.
+            _ilGenerator.Emit(OpCodes.Ldstr, value);
+            return null;
         }
 
         public override object VisitTrueLitFactor(MiniCSharpParser.TrueLitFactorContext context)
         {
-            return base.VisitTrueLitFactor(context);
+            // Las constantes de tipo "bool" se manejan en la gramática. 
+            // En CIL, 'true' se representa con el entero 1.
+            // Ldc_I4_1 es una instrucción optimizada para cargar el valor 1.
+            _ilGenerator.Emit(OpCodes.Ldc_I4_1);
+            return null;
         }
 
         public override object VisitFalseLitFactor(MiniCSharpParser.FalseLitFactorContext context)
         {
-            return base.VisitFalseLitFactor(context);
+            // Las constantes de tipo "bool" se manejan en la gramática. 
+            // En CIL, 'false' se representa con el entero 0.
+            // Ldc_I4_0 es la instrucción optimizada para cargar el valor 0.
+            _ilGenerator.Emit(OpCodes.Ldc_I4_0);
+            return null;
         }
 
         public override object VisitNullLitFactor(MiniCSharpParser.NullLitFactorContext context)
         {
-            return base.VisitNullLitFactor(context);
+            // "null" es un nombre predeclarado en el ambiente estándar. 
+            // Ldnull carga una referencia nula en la pila.
+            _ilGenerator.Emit(OpCodes.Ldnull);
+            return null;
         }
 
         public override object VisitNewObjectFactor(MiniCSharpParser.NewObjectFactorContext context)

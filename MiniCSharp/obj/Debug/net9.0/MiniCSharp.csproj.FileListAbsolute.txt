@@ -52,3 +52,4 @@ C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\
 C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.pdb
 C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.genruntimeconfig.cache
 C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\ref\MiniCSharp.dll
+C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\bin\Debug\net9.0\Lokad.ILPack.dll

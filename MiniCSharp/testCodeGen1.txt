@@ -1,0 +1,20 @@
+// test.txt - Prueba para CodeGen Tarea 1
+class TesteGenBasico
+{
+    // Método Main vacío. Esto es suficiente para probar que se puede
+    // crear la clase, el método y el punto de entrada del .exe.
+    void Main() 
+    {
+        int x;
+        bool y;
+        string z;
+
+        // Aún no podemos probar asignaciones como 'x = 10;'.
+        // Solo las declaraciones.
+    }
+
+    // Otro método para asegurar que se definen múltiples métodos.
+    void OtroMetodo()
+    {
+    }
+}

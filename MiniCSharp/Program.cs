@@ -1,19 +1,18 @@
 ﻿using System;
 using System.IO;
-using System.Collections.Generic; // Necesario para List<string> en SyntaxErrorListener
+using System.Collections.Generic;
 using Antlr4.Runtime;
-// Asegúrate que el namespace de tu checker es correcto aquí
-using MiniCSharp.Grammar.Checker; // Namespace donde reside MiniCsharpChecker y TablaSimbolos
-using parser.generated; // Namespace de tu Lexer y Parser generados por ANTLR
+using MiniCSharp.Grammar.Checker;
+using MiniCSharp.Grammar.encoder;
+using parser.generated;
 
-namespace MiniCSharp // O el namespace principal de tu proyecto
+namespace MiniCSharp
 {
     class Program
     {
         static void Main(string[] args)
         {
-            // NOTA: El filePath está hardcodeado. Puede ser mejor hacerlo relativo o configurable.
-            var filePath = "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\test.txt"; 
+            var filePath = "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\testCodeGen1.txt"; 
 
             if (!File.Exists(filePath))
             {
@@ -29,49 +28,53 @@ namespace MiniCSharp // O el namespace principal de tu proyecto
                 var tokens = new CommonTokenStream(lexer);
                 var parser = new MiniCSharpParser(tokens);
 
-                // Remover el listener de errores por defecto y añadir uno personalizado
-                // para capturar errores de sintaxis de forma más controlada.
                 parser.RemoveErrorListeners(); 
                 var syntaxErrorListener = new SyntaxErrorListener();
                 parser.AddErrorListener(syntaxErrorListener);
 
-                // Parsear y obtener el árbol sintáctico.
-                // El método parser.program() devuelve un ProgramContext.
-                MiniCSharpParser.ProgramContext tree = parser.program(); // Cambio clave aquí
+                MiniCSharpParser.ProgramContext tree = parser.program(); 
 
-                // Verificar si hubo errores de sintaxis durante el parseo
                 if (syntaxErrorListener.HasErrors)
                 {
-                    Console.WriteLine("Errores de sintaxis detectados por el parser:");
+                    Console.WriteLine("Errores de sintaxis detectados por el parser. Compilación detenida.");
                     foreach (var error in syntaxErrorListener.ErrorMessages)
                     {
                         Console.WriteLine(error);
                     }
-                    Console.WriteLine("No se procederá al análisis semántico debido a errores de sintaxis.");
                     return; 
                 }
 
                 Console.WriteLine("Análisis sintáctico completado sin errores.");
                 
+                // --- FASE 2: ANÁLISIS SEMÁNTICO (CHECKER) ---
                 Console.WriteLine("\nIniciando análisis semántico (Checker)...");
-
-                // Crear una instancia del Checker
                 MiniCsharpChecker checker = new MiniCsharpChecker();
                 checker.Visit(tree); 
 
-                // Verificar si el Checker reportó errores semánticos
                 if (checker.Errors.Count > 0)
                 {
-                    Console.WriteLine($"\nSe encontraron {checker.Errors.Count} errores semánticos:");
+                    Console.WriteLine($"\nSe encontraron {checker.Errors.Count} errores semánticos. Compilación detenida.");
                     foreach (string error in checker.Errors)
                     {
                         Console.WriteLine(error);
                     }
+                    return; // Detener si hay errores semánticos
                 }
-                else
-                {
-                    Console.WriteLine("\nAnálisis semántico (Checker) completado sin errores reportados.");
-                }
+                
+                Console.WriteLine("\nAnálisis semántico (Checker) completado sin errores reportados.");
+
+                // --- FASE 3: GENERACIÓN DE CÓDIGO ---
+                Console.WriteLine("\nIniciando generación de código...");
+                
+                // 1. Crear una instancia del CodeGen, pasándole el nombre del archivo de salida.
+                var outputFileName = "output.exe";
+                CodeGen codeGenerator = new CodeGen(outputFileName);
+
+                // 2. Visitar el árbol para generar el código CIL en memoria.
+                codeGenerator.Visit(tree);
+
+                // 3. Guardar el ensamblado generado en un archivo .exe.
+                codeGenerator.SaveAssembly();
             }
             catch (Exception ex)
             {
@@ -81,7 +84,7 @@ namespace MiniCSharp // O el namespace principal de tu proyecto
         }
     }
 
-    // Clase auxiliar para capturar errores de sintaxis del parser
+    // Clase auxiliar para capturar errores de sintaxis del parser (sin cambios)
     public class SyntaxErrorListener : BaseErrorListener
     {
         public List<string> ErrorMessages { get; } = new List<string>();
