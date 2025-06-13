@@ -47,6 +47,10 @@
             "Antlr4.Runtime.Standard": {
               "target": "Package",
               "version": "[4.13.1, )"
+            },
+            "Lokad.ILPack": {
+              "target": "Package",
+              "version": "[0.3.0, )"
             }
           },
           "imports": [
