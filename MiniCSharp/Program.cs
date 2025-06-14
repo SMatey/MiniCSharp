@@ -11,7 +11,7 @@ namespace MiniCSharp
     {
         static void Main(string[] args)
         {
-            var filePath = "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\testCodeGen2.txt"; 
+            var filePath = "C:\\Users\\carlo\\OneDrive\\Documentos\\GitHub\\MiniCSharp\\MiniCSharp\\testCodeGen3.txt"; 
             var outputDllName = "output.dll";
 
             if (!File.Exists(filePath))

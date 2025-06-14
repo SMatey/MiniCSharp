@@ -1,0 +1,90 @@
+// Archivo: testCodeGen_IfWhile_For_Concise.txt
+// Proposito: Pruebas concisas para las sentencias IF, WHILE y FOR.
+
+class PruebaAsignaciones
+{
+    void Main()
+    {
+        int x;
+        int contador;
+        
+        write(1); // Marcador de inicio de prueba IF simple
+
+        // --- Prueba IF simple (verdadero) ---
+        x = 5;
+        if (x == 5)
+        {
+            write(10); // Salida esperada: 10
+        }
+
+        // --- Prueba IF simple (falso) ---
+        x = 1;
+        if (x == 2)
+        {
+            write(11); // No debe salir nada
+        }
+
+        write(2); // Marcador de inicio de prueba IF-ELSE
+
+        // --- Prueba IF-ELSE (IF verdadero) ---
+        x = 10;
+        if (x > 5)
+        {
+            write(20); // Salida esperada: 20
+        }
+        else
+        {
+            write(21); // No debe salir nada
+        }
+
+        // --- Prueba IF-ELSE (ELSE verdadero) ---
+        x = 3;
+        if (x > 5)
+        {
+            write(22); // No debe salir nada
+        }
+        else
+        {
+            write(23); // Salida esperada: 23
+        }
+
+        write(3); // Marcador de inicio de prueba WHILE
+
+        // --- Prueba WHILE (se ejecuta) ---
+        contador = 0;
+        while (contador < 2) // Se ejecuta 2 veces
+        {
+            write(30 + contador); // Salida esperada: 30, 31
+            contador++;
+        }
+
+        // --- Prueba WHILE (no se ejecuta) ---
+        contador = 5;
+        while (contador < 3)
+        {
+            write(32); // No debe salir nada
+            contador++;
+        }
+
+        write(4); // Marcador de inicio de prueba FOR
+
+        // --- Prueba FOR 1: Básico con declaración e incremento ---
+        // Salida esperada: 40, 41, 42, 43, 44
+        for (int i = 0, limit = 5; i < limit; i = i + 1;)
+        {
+            write(40 + i);
+        }
+
+        write(5); // Marcador de inicio de prueba FOR 2
+
+        // --- Prueba FOR 2: Sin inicialización, condición simple, decremento ---
+        // Se espera que 'contador' valga 2 del último while que se ejecutó.
+        // Salida esperada: 52, 51
+        for (; contador > 0; contador--) 
+        {
+            write(50 + contador);
+        }
+        
+        write(6); // Marcador de fin de pruebas
+    }
+}

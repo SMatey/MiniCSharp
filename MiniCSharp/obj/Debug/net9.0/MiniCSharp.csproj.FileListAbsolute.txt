@@ -54,3 +54,22 @@ C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\
 C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\ref\MiniCSharp.dll
 C:\Users\casam\OneDrive\Documentos\Anio 2025\semestre 1\QA\MiniCSharp\MiniCSharp\bin\Debug\net9.0\Lokad.ILPack.dll
 C:\Users\Lizsa\OneDrive\Documents\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\Lokad.ILPack.dll
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.exe
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.deps.json
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.runtimeconfig.json
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.dll
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\MiniCSharp.pdb
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\Antlr4.Runtime.Standard.dll
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\bin\Debug\net9.0\Lokad.ILPack.dll
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.csproj.AssemblyReference.cache
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.AssemblyInfoInputs.cache
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.AssemblyInfo.cs
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.csproj.CoreCompileInputs.cache
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.sourcelink.json
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.csproj.Up2Date
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.dll
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\refint\MiniCSharp.dll
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.pdb
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\MiniCSharp.genruntimeconfig.cache
+C:\Users\carlo\OneDrive\Documentos\GitHub\MiniCSharp\MiniCSharp\obj\Debug\net9.0\ref\MiniCSharp.dll

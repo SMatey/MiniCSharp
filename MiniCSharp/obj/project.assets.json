@@ -324,19 +324,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Lizsa\\.nuget\\packages\\": {}
+    "C:\\Users\\carlo\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
+      "projectUniqueName": "C:\\Users\\carlo\\OneDrive\\Documentos\\GitHub\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
       "projectName": "MiniCSharp",
-      "projectPath": "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
-      "packagesPath": "C:\\Users\\Lizsa\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\obj\\",
+      "projectPath": "C:\\Users\\carlo\\OneDrive\\Documentos\\GitHub\\MiniCSharp\\MiniCSharp\\MiniCSharp.csproj",
+      "packagesPath": "C:\\Users\\carlo\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\carlo\\OneDrive\\Documentos\\GitHub\\MiniCSharp\\MiniCSharp\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Lizsa\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\carlo\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -391,7 +391,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Users\\Lizsa\\.dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Users\\carlo\\.dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
