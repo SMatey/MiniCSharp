@@ -22,6 +22,7 @@ namespace MiniCSharp.Grammar.encoder
         private ILGenerator _ilGenerator;
         private MethodBuilder _currentMethod;
         private readonly List<Dictionary<string, LocalBuilder>> _scopedLocalVariables;
+        private readonly MethodInfo _consoleWriteLineIntMethod;
 
         // Referencia al constructor de la clase y al método Main
         private MethodBuilder _mainMethodBuilder;
@@ -40,6 +41,8 @@ namespace MiniCSharp.Grammar.encoder
             _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(_assemblyName, AssemblyBuilderAccess.Run);
 
             _moduleBuilder = _assemblyBuilder.DefineDynamicModule(outputFileName);
+            
+            _consoleWriteLineIntMethod = typeof(Console).GetMethod("WriteLine", new[] { typeof(int) })!;
     
             _localVariables = new Dictionary<ParserRuleContext, LocalBuilder>();
             
@@ -307,9 +310,79 @@ namespace MiniCSharp.Grammar.encoder
         }
 
         public override object VisitDesignatorStatement(MiniCSharpParser.DesignatorStatementContext context)
-        {
-            return base.VisitDesignatorStatement(context);
-        }
+         {
+             // La regla de la gramática nos dice que este statement puede ser una asignación,
+             // una llamada a método, un incremento o un decremento.
+             // Aquí implementaremos la lógica para cada caso según la imagen.
+
+             // CASO 1: Asignación (ej: x = 5 + y;)
+             if (context.ASSIGN() != null)
+             {
+                 // Requisito 1: "visitar la expresión del lado derecho para dejar el valor en la pila".
+                 // Al visitar la expresión, nuestro código ya se encarga de calcular el resultado
+                 // y dejarlo en la cima de la pila CIL.
+                 Visit(context.expr());
+
+                 // Requisito 2: "generar la instrucción para guardar ese valor en la variable del designador".
+                 // Primero, identificamos la variable del lado izquierdo llamando a nuestro 'buscador'.
+                 object result = Visit(context.designator());
+                 if (result is LocalBuilder local)
+                 {
+                     // Emitimos la instrucción 'Stloc' (Store Local), que toma el valor de la pila
+                     // y lo guarda en la variable local especificada.
+                     _ilGenerator.Emit(OpCodes.Stloc, local);
+                 }
+                 // NOTA: Para guardar en campos de clase (obj.campo), necesitaríamos emitir OpCodes.Stfld.
+             }
+             // CASO 2: Incremento (ej: i++;)
+             else if (context.INCREMENT() != null)
+             {
+                 // Requisito: "cargar valor, cargar 1, sumar, guardar valor".
+
+                 // Identificamos la variable a incrementar.
+                 object result = Visit(context.designator());
+                 if (result is LocalBuilder local)
+                 {
+                     // 1. Cargar el valor actual de la variable en la pila.
+                     _ilGenerator.Emit(OpCodes.Ldloc, local);
+
+                     // 2. Cargar el valor 1 en la pila. Ldc_I4_1 es la instrucción optimizada para esto.
+                     _ilGenerator.Emit(OpCodes.Ldc_I4_1);
+
+                     // 3. Sumar. La instrucción 'Add' toma los dos valores de la pila y deja el resultado.
+                     _ilGenerator.Emit(OpCodes.Add);
+
+                     // 4. Guardar el nuevo valor de vuelta en la variable.
+                     _ilGenerator.Emit(OpCodes.Stloc, local);
+                 }
+             }
+             // CASO 3: Decremento (ej: i--;)
+             else if (context.DECREMENT() != null)
+             {
+                 // Requisito: "cargar valor, cargar 1, restar, guardar valor".
+
+                 // Identificamos la variable a decrementar.
+                 object result = Visit(context.designator());
+                 if (result is LocalBuilder local)
+                 {
+                     // 1. Cargar el valor actual de la variable.
+                     _ilGenerator.Emit(OpCodes.Ldloc, local);
+
+                     // 2. Cargar el valor 1.
+                     _ilGenerator.Emit(OpCodes.Ldc_I4_1);
+
+                     // 3. Restar. La instrucción 'Sub' toma los dos valores y deja el resultado.
+                     _ilGenerator.Emit(OpCodes.Sub);
+
+                     // 4. Guardar el nuevo valor de vuelta en la variable.
+                     _ilGenerator.Emit(OpCodes.Stloc, local);
+                 }
+             }
+             // NOTA: El caso de una llamada a método como statement (ej: MiMetodo();)
+             // también se manejaría aquí, pero no está en la lista de responsabilidades de la imagen.
+
+             return null;
+         }
 
         public override object VisitIfStatement(MiniCSharpParser.IfStatementContext context)
         {
@@ -357,7 +430,10 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitWriteStatement(MiniCSharpParser.WriteStatementContext context)
         {
-            return base.VisitWriteStatement(context);
+            Visit(context.expr());
+            _ilGenerator.Emit(OpCodes.Call, _consoleWriteLineIntMethod);
+
+            return null;
         }
 
         public override object VisitBlockStatement(MiniCSharpParser.BlockStatementContext context)
@@ -461,9 +537,54 @@ namespace MiniCSharp.Grammar.encoder
         }
 
         public override object VisitExpression(MiniCSharpParser.ExpressionContext context)
-        {
-            return base.VisitExpression(context);
-        }
+         {
+             // La regla de la gramática es: ADDOP? cast? term (ADDOP term)*
+             // Primero, visitamos el término inicial. Su valor quedará en la cima de la pila CIL.
+             Visit(context.term(0));
+
+             // Verificamos si hay un operador unario al principio (ej. -a + b)
+             // Esto ocurre si hay más operadores ADDOP que términos binarios.
+             bool hasUnaryOp = context.ADDOP().Length > context.term().Length - 1;
+             if (hasUnaryOp)
+             {
+                 // Si el operador unario es '-', emitimos la instrucción de negación.
+                 if (context.ADDOP(0).GetText() == "-")
+                 {
+                     _ilGenerator.Emit(OpCodes.Neg);
+                 }
+                 // Nota: El '+' unario no tiene una instrucción CIL, simplemente se ignora.
+             }
+
+             // Ahora procesamos las operaciones binarias (el resto de la expresión)
+             int binaryOpCount = context.term().Length - 1;
+             for (int i = 0; i < binaryOpCount; i++)
+             {
+                 // Visitamos el siguiente término (el operando derecho).
+                 // Esto deja su valor en la pila. Ahora la pila tiene: [valor_izquierdo, valor_derecho]
+                 Visit(context.term(i + 1));
+
+                 // Determinamos qué operador es (+ o -)
+                 // Si había un operador unario, los índices de los operadores binarios se desplazan.
+                 int opIndex = hasUnaryOp ? i + 1 : i;
+                 IToken op = context.ADDOP(opIndex).Symbol;
+
+                 switch (op.Text)
+                 {
+                     case "+":
+                         // Emite la instrucción de suma. Toma los dos valores de la pila,
+                         // los suma y pone el resultado de vuelta en la cima de la pila.
+                         _ilGenerator.Emit(OpCodes.Add);
+                         break;
+                     case "-":
+                         // Emite la instrucción de resta.
+                         _ilGenerator.Emit(OpCodes.Sub);
+                         break;
+                 }
+             }
+
+             // Al final, el resultado de toda la expresión está en la cima de la pila.
+             return null;
+         }
 
         public override object VisitTypeCast(MiniCSharpParser.TypeCastContext context)
         {
@@ -515,7 +636,24 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context)
         {
-            return base.VisitDesignatorFactor(context);
+            // La gramática para este factor es un 'designator' (que puede ser una variable o una llamada a método).
+            // Aquí manejamos el caso en que es una VARIABLE usada en una expresión (ej. el lado derecho de una asignación).
+
+            // 1. Visitamos el nodo designador para que nos devuelva el 'LocalBuilder' asociado a la variable.
+            object result = Visit(context.designator());
+
+            // 2. Verificamos que lo que obtuvimos es, en efecto, un LocalBuilder.
+            if (result is LocalBuilder local)
+            {
+                // 3. Si lo es, emitimos la instrucción para CARGAR el valor de esa variable local en la pila.
+                // 'Ldloc' significa "Load Local Variable".
+                _ilGenerator.Emit(OpCodes.Ldloc, local);
+            }
+            // NOTA: El caso de que el designador sea una llamada a un método se manejaría aquí también,
+            // verificando el 'LPAREN' del contexto. Por ahora, nos centramos en las variables.
+            // El caso de que sea un campo de clase (obj.campo) requeriría emitir OpCodes.Ldfld y es más avanzado.
+
+            return null;
         }
 
         public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context)
@@ -592,12 +730,29 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitParenExpressionFactor(MiniCSharpParser.ParenExpressionFactorContext context)
         {
-            return base.VisitParenExpressionFactor(context);
+            return Visit(context.expr());
         }
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-            return base.VisitDesignatorNode(context);
+            // Este método actúa como un ayudante. Su única misión es encontrar
+            // la variable en nuestros ámbitos y devolver su 'LocalBuilder'.
+
+            // Por ahora, manejamos el caso más simple: un designador con un solo ID (ej. "miVariable").
+            // La lógica para acceder a campos (obj.campo) o arrays (arr[i]) iría aquí.
+            if (context.ID().Length == 1 && context.expr().Length == 0)
+            {
+                string varName = context.ID(0).GetText();
+
+                // Usamos el método 'FindLocal' que ya tienes para buscar la variable
+                // en el ámbito actual y en los superiores.
+                LocalBuilder local = FindLocal(varName);
+
+                // Devolvemos el 'LocalBuilder' para que el método que nos llamó (VisitDesignatorFactor) lo use.
+                return local;
+            }
+            
+            return null;
         }
 
         public override object VisitRelationalOp(MiniCSharpParser.RelationalOpContext context)

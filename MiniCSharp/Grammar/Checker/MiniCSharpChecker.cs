@@ -1383,7 +1383,7 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitParenExpressionFactor(MiniCSharpParser.ParenExpressionFactorContext context) //-------Matey
         {
-            return base.VisitParenExpressionFactor(context);
+            return Visit(context.expr());
         }
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)

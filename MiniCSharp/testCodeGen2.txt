@@ -1,0 +1,64 @@
+// Archivo: prueba_asignaciones.txt
+// Proposito: Probar la logica de expresiones, asignaciones,
+//            incrementos y decrementos del generador de codigo.
+
+class PruebaAsignaciones
+{
+    void Main()
+    {
+        int resultado;
+        int a, b;
+
+        // --- Punto 1 y 2: Expresiones Aritméticas y Carga de Variables ---
+        // Se prueba que las operaciones basicas y el uso de variables funcionan.
+
+        write(1); // Marcador de inicio de prueba
+
+        a = 10;
+        b = 5;
+        resultado = a + b; // Suma
+        write(resultado); // Salida esperada: 15
+
+        resultado = a - b; // Resta
+        write(resultado); // Salida esperada: 5
+
+        resultado = a * b; // Multiplicación
+        write(resultado); // Salida esperada: 50
+
+        resultado = a / b; // División
+        write(resultado); // Salida esperada: 2
+
+        resultado = 13 % b; // Resto (Módulo)
+        write(resultado); // Salida esperada: 3
+
+        write(2); // Marcador de prueba de precedencia
+
+        // Prueba de Precedencia de Operadores: 2 + 3 * 4 debe ser 14, no 20.
+        resultado = 2 + 3 * 4;
+        write(resultado); // Salida esperada: 14
+
+        // Prueba de Paréntesis: (2 + 3) * 4 debe ser 20.
+        resultado = (2 + 3) * 4;
+        write(resultado); // Salida esperada: 20
+
+        // Prueba de Operador Unario Negativo
+        resultado = -resultado;
+        write(resultado); // Salida esperada: -20
+
+
+        // --- Punto 3: Incremento y Decremento ---
+        write(3); // Marcador de prueba de incremento/decremento
+
+        a = 0;
+        write(a); // Salida esperada: 0
+
+        a++;    // a ahora debe ser 1
+        write(a); // Salida esperada: 1
+
+        a++;    // a ahora debe ser 2
+        write(a); // Salida esperada: 2
+
+        a--;    // a ahora debe ser 1
+        write(a); // Salida esperada: 1
+    }
+}

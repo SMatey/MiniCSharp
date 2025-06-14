@@ -11,7 +11,7 @@ namespace MiniCSharp
     {
         static void Main(string[] args)
         {
-            var filePath = "C:\\Users\\casam\\OneDrive\\Documentos\\Anio 2025\\semestre 1\\QA\\MiniCSharp\\MiniCSharp\\testCodeGen1.txt"; 
+            var filePath = "C:\\Users\\Lizsa\\OneDrive\\Documents\\GitHub\\MiniCSharp\\MiniCSharp\\testCodeGen2.txt"; 
             var outputDllName = "output.dll";
 
             if (!File.Exists(filePath))
@@ -65,7 +65,7 @@ namespace MiniCSharp
             try
             {
                 Assembly generatedAssembly = Assembly.LoadFrom(Path.GetFullPath(outputDllName));
-                Type? programType = generatedAssembly.GetType("CodeGenTest"); // Asegúrate que coincida con el nombre de la clase en test.txt
+                Type? programType = generatedAssembly.GetType("PruebaAsignaciones"); 
                 
                 if (programType != null)
                 {
@@ -93,7 +93,16 @@ namespace MiniCSharp
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nError durante la ejecución de la DLL: {ex.Message}");
+                // --- INICIO DE LA MODIFICACIÓN ---
+
+                // La excepción real está en la propiedad "InnerException".
+                var innerEx = ex.InnerException ?? ex;
+
+                Console.WriteLine($"\n--- ERROR DENTRO DEL CÓDIGO GENERADO ---");
+                Console.WriteLine($"Tipo de Excepción: {innerEx.GetType().Name}");
+                Console.WriteLine($"Mensaje: {innerEx.Message}");
+                Console.WriteLine("Stack Trace del código generado:");
+                Console.WriteLine(innerEx.StackTrace);
             }
         }
     }
