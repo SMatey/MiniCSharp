@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MiniCSharp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+14f22830226d12523a4cca36e0d79126bdf903c8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9d8d6e2fafa8f955d19dd9acb2ffb6cb9505ee7a")]
 [assembly: System.Reflection.AssemblyProductAttribute("MiniCSharp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MiniCSharp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

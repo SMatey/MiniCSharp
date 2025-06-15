@@ -8,7 +8,7 @@ using Antlr4.Runtime.Tree;
 using Lokad.ILPack; 
 using parser.generated;
 using System.Globalization;
-
+using System.Linq;
 namespace MiniCSharp.Grammar.encoder
 {
     public class CodeGen : MiniCSharpParserBaseVisitor<object>
@@ -27,8 +27,7 @@ namespace MiniCSharp.Grammar.encoder
         private readonly Stack<Label> _breakTargets;
         // Referencia al constructor de la clase y al método Main
         private MethodBuilder _mainMethodBuilder;
-        
-        // Diccionario para registrar variables locales
+        private Type _currentSwitchExprType;        // Diccionario para registrar variables locales
         private readonly Dictionary<ParserRuleContext, LocalBuilder> _localVariables;
 
         /// <summary>
@@ -836,7 +835,126 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitSwitchStat(MiniCSharpParser.SwitchStatContext context)
         {
-            return base.VisitSwitchStat(context);
+            OpenScope();
+
+            Label endSwitchLabel = _ilGenerator.DefineLabel();
+            _breakTargets.Push(endSwitchLabel);
+
+            // Evaluar la expresión del switch y guardar su valor temporalmente
+            Visit(context.expr()); // La expresión deja su valor en la pila
+
+            // Determinar el tipo de la expresión del switch.
+            // ¡ADVERTENCIA! Esto sigue siendo una suposición simplificada.
+            // Idealmente, el checker semántico habría anotado el tipo de context.expr()
+            // en la tabla de símbolos o en el AST, y lo recuperarías de ahí.
+            // Por ahora, asumimos int si los cases son INTLIT.
+            _currentSwitchExprType = typeof(int);
+
+            LocalBuilder switchValue = _ilGenerator.DeclareLocal(_currentSwitchExprType);
+            _ilGenerator.Emit(OpCodes.Stloc, switchValue);
+
+            var caseLabels = new List<(int value, Label label)>();
+            Label defaultLabel = _ilGenerator.DefineLabel();
+            bool hasDefault = false;
+
+            // Acceder a las secciones del switch usando GetRuleContexts para mayor robustez
+            foreach (var section in context.switchBlock().GetRuleContexts<MiniCSharpParser.SwitchSectionContext>())
+            {
+                // Acceder a las etiquetas de caso dentro de la sección usando GetRuleContexts
+                foreach (var labelCtx in section.GetRuleContexts<MiniCSharpParser.SwitchLabelContext>())
+                {
+                    if (labelCtx is MiniCSharpParser.CaseLabelContext caseCtx)
+                    {
+                        // --- INICIO DE LA CORRECCIÓN DE COUNT Y FACTOR ---
+                        if (caseCtx.expr() is MiniCSharpParser.ExpressionContext caseExpr &&
+                            caseExpr.term().Length == 1 && // Esto es un método, debería estar bien.
+                            // Usamos .Count() (método de extensión de LINQ) en lugar de .Count (propiedad)
+                            // para mayor compatibilidad si hay alguna anomalía con la propiedad directa.
+                            caseExpr.term(0).GetRuleContexts<MiniCSharpParser.FactorContext>().Count() == 1 && 
+                            // Acceder al primer elemento de la colección de factores
+                            caseExpr.term(0).GetRuleContexts<MiniCSharpParser.FactorContext>().First() is MiniCSharpParser.IntLitFactorContext intLitFactor) 
+                        // --- FIN DE LA CORRECCIÓN DE COUNT Y FACTOR ---
+                        {
+                            int caseValue = int.Parse(intLitFactor.INTLIT().GetText());
+                            caseLabels.Add((caseValue, _ilGenerator.DefineLabel()));
+                        }
+                        else
+                        {
+                            throw new NotSupportedException("Solo literales enteros son soportados como etiquetas de caso de switch por ahora.");
+                        }
+                    }
+                    else if (labelCtx is MiniCSharpParser.DefaultLabelContext)
+                    {
+                        defaultLabel = _ilGenerator.DefineLabel();
+                        hasDefault = true;
+                    }
+                }
+            }
+
+            foreach (var caseInfo in caseLabels)
+            {
+                _ilGenerator.Emit(OpCodes.Ldloc, switchValue);
+                _ilGenerator.Emit(OpCodes.Ldc_I4, caseInfo.value);
+                _ilGenerator.Emit(OpCodes.Beq, caseInfo.label);
+            }
+
+            if (hasDefault)
+            {
+                _ilGenerator.Emit(OpCodes.Br, defaultLabel);
+            }
+            else
+            {
+                _ilGenerator.Emit(OpCodes.Br, endSwitchLabel);
+            }
+
+            // Iterar sobre las secciones nuevamente para generar el código
+            foreach (var section in context.switchBlock().GetRuleContexts<MiniCSharpParser.SwitchSectionContext>())
+            {
+                bool firstLabelOfSectionHandled = false;
+                foreach (var labelCtx in section.GetRuleContexts<MiniCSharpParser.SwitchLabelContext>())
+                {
+                    if (labelCtx is MiniCSharpParser.CaseLabelContext caseCtx)
+                    {
+                        if (caseCtx.expr() is MiniCSharpParser.ExpressionContext caseExpr &&
+                            caseExpr.term().Length == 1 &&
+                            caseExpr.term(0).GetRuleContexts<MiniCSharpParser.FactorContext>().Count() == 1 &&
+                            caseExpr.term(0).GetRuleContexts<MiniCSharpParser.FactorContext>().First() is MiniCSharpParser.IntLitFactorContext intLitFactor)
+                        {
+                            int caseValue = int.Parse(intLitFactor.INTLIT().GetText());
+                            var currentCaseInfo = caseLabels.FirstOrDefault(cl => cl.value == caseValue);
+                            if (currentCaseInfo.label != null && currentCaseInfo.label != default(Label) && !firstLabelOfSectionHandled)
+                            {
+                                _ilGenerator.MarkLabel(currentCaseInfo.label);
+                                firstLabelOfSectionHandled = true;
+                            }
+                        }
+                    }
+                    else if (labelCtx is MiniCSharpParser.DefaultLabelContext)
+                    {
+                        if (!firstLabelOfSectionHandled && hasDefault)
+                        {
+                            _ilGenerator.MarkLabel(defaultLabel);
+                            firstLabelOfSectionHandled = true;
+                        }
+                    }
+                }
+
+                // --- INICIO DE LA CORRECCIÓN DE STATEMENT ---
+                // Acceder a las sentencias dentro de la sección usando GetRuleContexts
+                foreach (var stmtCtx in section.GetRuleContexts<MiniCSharpParser.StatementContext>())
+                {
+                // --- FIN DE LA CORRECCIÓN DE STATEMENT ---
+                    Visit(stmtCtx);
+                }
+                
+                _ilGenerator.Emit(OpCodes.Br, endSwitchLabel);
+            }
+
+            _ilGenerator.MarkLabel(endSwitchLabel);
+            _breakTargets.Pop();
+            CloseScope();
+            _currentSwitchExprType = null; // Limpiar el campo
+            return null;
         }
 
         public override object VisitSwitchBlockContent(MiniCSharpParser.SwitchBlockContentContext context)

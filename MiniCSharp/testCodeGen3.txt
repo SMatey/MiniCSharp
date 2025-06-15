@@ -1,5 +1,5 @@
 // Archivo: testCodeGen_IfWhile_For_Concise.txt
-// Proposito: Pruebas concisas para las sentencias IF, WHILE y FOR.
+// Proposito: Pruebas concisas para las sentencias IF, WHILE, FOR y SWITCH.
 
 class PruebaAsignaciones
 {
@@ -85,6 +85,55 @@ class PruebaAsignaciones
             write(50 + contador);
         }
         
-        write(6); // Marcador de fin de pruebas
+        write(6); // Marcador de inicio de prueba SWITCH
+
+        // --- Prueba SWITCH 1: Caso específico ---
+        x = 7;
+        switch (x) {
+            case 1:
+                write(60); // No debe salir
+                break;
+            case 5:
+                write(61); // No debe salir
+                break;
+            case 7:
+                write(62); // Salida esperada: 62
+                break;
+            default:
+                write(63); // No debe salir
+                break;
+        }
+
+        write(7); // Marcador entre pruebas SWITCH
+
+        // --- Prueba SWITCH 2: Caso default ---
+        x = 99;
+        switch (x) {
+            case 10:
+                write(70); // No debe salir
+                break;
+            case 20:
+                write(71); // No debe salir
+                break;
+            default:
+                write(72); // Salida esperada: 72
+                break;
+        }
+
+        write(8); // Marcador entre pruebas SWITCH (sin default)
+
+        // --- Prueba SWITCH 3: Sin caso match y sin default ---
+        x = 100;
+        switch (x) {
+            case 10:
+                write(80); // No debe salir
+                break;
+            case 20:
+                write(81); // No debe salir
+                // No hay default
+        }
+        // No debe salir nada más hasta el marcador final.
+
+        write(9); // Marcador de fin de pruebas
     }
 }
