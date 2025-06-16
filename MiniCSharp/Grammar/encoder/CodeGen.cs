@@ -30,6 +30,10 @@ namespace MiniCSharp.Grammar.encoder
         private readonly Stack<Label> _breakTargets;
         private readonly MethodInfo _consoleWriteStringMethod;
         private readonly MethodInfo _consoleReadLineMethod;
+        private readonly Dictionary<string, MethodInfo> _predeclaredMethods;
+        public static int RuntimeOrd(char c) { return (int)c; }
+        public static char RuntimeChr(int i) { return (char)i; }
+        
         // Referencia al constructor de la clase y al método Main
         private MethodBuilder _mainMethodBuilder;
         private Type _currentSwitchExprType;        // Diccionario para registrar variables locales
@@ -44,17 +48,23 @@ namespace MiniCSharp.Grammar.encoder
             _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(_assemblyName, AssemblyBuilderAccess.Run);
             _moduleBuilder = _assemblyBuilder.DefineDynamicModule("MiniCSharpModule");
 
-            // --- LÍNEAS DE INICIALIZACIÓN CORREGIDAS Y AÑADIDAS ---
+            // --- LÍNEAS DE INICIALIZACIÓN (SIN CAMBIOS) ---
             _consoleWriteLineIntMethod = typeof(Console).GetMethod("WriteLine", new[] { typeof(int) });
             _consoleWriteLineStringMethod = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
             _consoleWriteStringMethod = typeof(Console).GetMethod("Write", new[] { typeof(string) });
             _consoleReadLineMethod = typeof(Console).GetMethod("ReadLine", Type.EmptyTypes);
             _classFields = new Dictionary<string, FieldBuilder>();
-            // -----------------------------------------------------------
-
-            _localVariables = new Dictionary<ParserRuleContext, LocalBuilder>(); // Lo dejé por si lo usas
+            _localVariables = new Dictionary<ParserRuleContext, LocalBuilder>();
             _scopedLocalVariables = new List<Dictionary<string, LocalBuilder>>();
             _breakTargets = new Stack<Label>();
+    
+            // --- LÓGICA DE BÚSQUEDA CORREGIDA ---
+            _predeclaredMethods = new Dictionary<string, MethodInfo>();
+    
+            // CORRECCIÓN: Se cambia 'NonPublic' por 'Public' para que encuentre los métodos.
+            var bindingFlags = BindingFlags.Public | BindingFlags.Static;
+            _predeclaredMethods["ord"] = this.GetType().GetMethod("RuntimeOrd", bindingFlags);
+            _predeclaredMethods["chr"] = this.GetType().GetMethod("RuntimeChr", bindingFlags);
         }
         
         // --- MÉTODOS AUXILIARES PARA GESTIÓN DE ÁMBITOS ---
@@ -253,10 +263,11 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
-            // --- 1. Obtener Tipos para la Firma del Método ---
+              // 1. Obtener los tipos de .NET para los parámetros del método.
             var paramInfo = new List<(Type type, string name)>();
             if (context.formPars() != null)
             {
+                // VisitFormalParams se encarga de devolver la lista de tipos y nombres.
                 var result = Visit(context.formPars());
                 if (result is List<(Type, string)> info)
                 {
@@ -265,48 +276,45 @@ namespace MiniCSharp.Grammar.encoder
             }
             var paramTypes = paramInfo.Select(p => p.type).ToArray();
 
+            // 2. Obtener el tipo de retorno del método.
             Type returnType = (context.VOID() != null) ? typeof(void) : GetTypeFromTypeName(context.type().GetText());
 
-            // --- 2. Definir el Método ---
+            // 3. Usar el TypeBuilder para DEFINIR el método en el ensamblado.
             string methodName = context.ID().GetText();
             MethodBuilder methodBuilder = _typeBuilder.DefineMethod(
                 methodName,
-                MethodAttributes.Public | MethodAttributes.Static,
+                MethodAttributes.Public | MethodAttributes.Static, // Todos los métodos son públicos y estáticos
                 returnType,
                 paramTypes
             );
-            _currentMethod = methodBuilder;
+            _currentMethod = methodBuilder; // Guardamos una referencia al método actual
 
-            if (methodName == "Main")
-            {
-                _mainMethodBuilder = methodBuilder;
-            }
-    
+            // 4. Obtenemos el generador de IL para empezar a escribir el "cuerpo" del método.
             _ilGenerator = methodBuilder.GetILGenerator();
 
-            // --- 3. Declarar Parámetros como Variables Locales/Argumentos ---
+            // 5. Creamos un nuevo ámbito para los parámetros y variables locales del método.
             OpenScope(); 
 
+            // 6. Procesamos los parámetros: los cargamos y los guardamos en variables locales.
             for (int i = 0; i < paramInfo.Count; i++)
             {
                 var (type, name) = paramInfo[i];
                 methodBuilder.DefineParameter(i + 1, ParameterAttributes.None, name);
-        
                 var localBuilder = DeclareLocal(name, type);
                 _ilGenerator.Emit(OpCodes.Ldarg, i);
                 _ilGenerator.Emit(OpCodes.Stloc, localBuilder);
             }
 
-            // --- 4. Visitar el Cuerpo del Método ---
-            // AÑADIDO: Una comprobación de seguridad antes de visitar el cuerpo del método.
+            // 7. Visitamos el bloque de sentencias que conforma el cuerpo del método.
             if (context.block() != null)
             {
                 Visit(context.block());
             }
 
+            // 8. Cerramos el ámbito del método.
             CloseScope(); 
 
-            // --- 5. Finalizar ---
+            // 9. Emitimos la instrucción de retorno final y limpiamos las variables.
             _ilGenerator.Emit(OpCodes.Ret);
             _ilGenerator = null;
             _currentMethod = null;
@@ -886,88 +894,52 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitActualParams(MiniCSharpParser.ActualParamsContext context)
         {
-            return base.VisitActualParams(context);
+            // La gramática para actPars es: expr (',' expr)*
+            // ANTLR genera un método .expr() que devuelve una lista de todos los nodos de expresión.
+            foreach (var exprNode in context.expr())
+            {
+                // Visitamos cada expresión de parámetro. Esto calculará el valor de la expresión
+                // y lo pondrá en la pila de ejecución, preparándolo para la llamada a la función.
+                Visit(exprNode);
+            }
+            return null; // Este método no devuelve un valor, solo modifica la pila.
         }
 
         public override object VisitConditionNode(MiniCSharpParser.ConditionNodeContext context)
         {
-            // Una condición (condition) es una o más condTerm unidas por '||'.
-            // condition : condTerm (OR condTerm)*
+            // 1. Visita el primer término de la condición (ej. a > b).
+            //    Esto dejará un valor booleano (0 para false, 1 para true) en la pila.
+            Visit(context.condTerm(0));
 
-            // Si solo hay un condTerm, lo visitamos directamente.
-            if (context.condTerm().Length == 1)
+            // 2. Por cada operador OR (||) que encuentre...
+            for (int i = 1; i < context.condTerm().Length; i++)
             {
-                Visit(context.condTerm(0));
+                // ...visita el siguiente término, dejando otro booleano en la pila.
+                Visit(context.condTerm(i));
+                // ...y emite la instrucción CIL 'Or'. Esta toma los dos valores booleanos
+                // de la pila, aplica un OR lógico, y deja el resultado (0 o 1) de vuelta.
+                _ilGenerator.Emit(OpCodes.Or);
             }
-            else
-            {
-                // Para OR, la lógica es:
-                // Evaluar el primer condTerm. Si es verdadero, saltar al final (la condición completa es verdadera).
-                // Si es falso, evaluar el siguiente condTerm, y así sucesivamente.
-                // Si todos son falsos, la condición completa es falsa.
-
-                Label endOfCondition = _ilGenerator.DefineLabel(); // Etiqueta para el final de la condición (si es verdadera)
-                Label nextCondTerm = _ilGenerator.DefineLabel(); // Etiqueta para el siguiente condTerm
-
-                Visit(context.condTerm(0));
-                _ilGenerator.Emit(OpCodes.Brtrue, endOfCondition); // Si el primer condTerm es verdadero, saltar a endOfCondition
-
-                for (int i = 1; i < context.condTerm().Length; i++)
-                {
-                    _ilGenerator.MarkLabel(nextCondTerm); // Marcamos el inicio del siguiente condTerm
-                    Visit(context.condTerm(i));
-                    _ilGenerator.Emit(OpCodes.Brtrue, endOfCondition); // Si este condTerm es verdadero, saltar a endOfCondition
-                }
-
-                // Si llegamos aquí, significa que todos los condTerms fueron falsos.
-                // Cargar 0 (false) en la pila.
-                _ilGenerator.Emit(OpCodes.Ldc_I4_0);
-                _ilGenerator.Emit(OpCodes.Br, endOfCondition); // Saltar al final de la condición
-
-                _ilGenerator.MarkLabel(endOfCondition); // Marcar el final de la condición
-            }
-            return null;
+            // Al final, la pila contiene un único valor booleano, que es el resultado
+            // de toda la condición, listo para ser usado por un 'if' o 'while'.
+            return typeof(bool);
         }
 
 
         public override object VisitConditionTermNode(MiniCSharpParser.ConditionTermNodeContext context) // <-- ¡CAMBIO AQUÍ!
         {
-            // Un condTerm es uno o más condFact unidos por '&&'.
-            // condTerm : condFact (AND condFact)* # ConditionTermNode;
+            // 1. Visita el primer factor de la condición (ej. x == y).
+            Visit(context.condFact(0));
 
-            // Si solo hay un condFact, lo visitamos directamente.
-            if (context.condFact().Length == 1)
+            // 2. Por cada operador AND (&&) que encuentre...
+            for (int i = 1; i < context.condFact().Length; i++)
             {
-                Visit(context.condFact(0));
+                // ...visita el siguiente factor...
+                Visit(context.condFact(i));
+                // ...y emite la instrucción CIL 'And', que hace lo mismo que 'Or' pero con AND.
+                _ilGenerator.Emit(OpCodes.And);
             }
-            else
-            {
-                // Para AND, la lógica es:
-                // Evaluar el primer condFact. Si es falso, saltar al final (el condTerm completo es falso).
-                // Si es verdadero, evaluar el siguiente condFact, y así sucesivamente.
-                // Si todos son verdaderos, el condTerm completo es verdadero.
-
-                Label endOfCondTerm = _ilGenerator.DefineLabel(); // Etiqueta para el final del condTerm (si es falso)
-                Label nextCondFact = _ilGenerator.DefineLabel(); // Etiqueta para el siguiente condFact
-
-                Visit(context.condFact(0));
-                _ilGenerator.Emit(OpCodes.Brfalse, endOfCondTerm); // Si el primer condFact es falso, saltar a endOfCondTerm
-
-                for (int i = 1; i < context.condFact().Length; i++)
-                {
-                    _ilGenerator.MarkLabel(nextCondFact); // Marcar el inicio del siguiente condFact
-                    Visit(context.condFact(i));
-                    _ilGenerator.Emit(OpCodes.Brfalse, endOfCondTerm); // Si este condFact es falso, saltar a endOfCondTerm
-                }
-
-                // Si llegamos aquí, significa que todos los condFacts fueron verdaderos.
-                // Cargar 1 (true) en la pila.
-                _ilGenerator.Emit(OpCodes.Ldc_I4_1);
-                _ilGenerator.Emit(OpCodes.Br, endOfCondTerm); // Saltar al final del condTerm
-
-                _ilGenerator.MarkLabel(endOfCondTerm); // Marcar el final del condTerm
-            }
-            return null;
+            return typeof(bool);
         }
 
          public override object VisitConditionFactNode(MiniCSharpParser.ConditionFactNodeContext context)
@@ -1121,31 +1093,46 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context)
         {
-            // 1. Usamos nuestro "GPS" para encontrar la variable.
-            object identifier = Visit(context.designator());
-
-            // 2. Nos aseguramos de que no es una llamada a método (ej. "MiMetodo()"),
-            //    sino una simple variable (ej. "x").
-            if (context.LPAREN() == null)
+            // --- CASO 1: Es una LLAMADA A MÉTODO (ej. ord(g_char) ) ---
+            if (context.LPAREN() != null)
             {
-                // 3. Verificamos qué tipo de identificador es y usamos la instrucción CIL correcta.
+                string methodName = context.designator().GetText();
+
+                // Si la llamada tiene parámetros...
+                if (context.actPars() != null)
+                {
+                    // ...visitamos el nodo de parámetros. Esto llamará a nuestro nuevo
+                    // método VisitActualParams para que ponga los argumentos en la pila.
+                    Visit(context.actPars());
+                }
+
+                // Ahora que los argumentos (si los hay) están en la pila,
+                // podemos llamar a la función de forma segura.
+                if (_predeclaredMethods.TryGetValue(methodName, out MethodInfo methodInfo))
+                {
+                    _ilGenerator.Emit(OpCodes.Call, methodInfo);
+                    return methodInfo.ReturnType;
+                }
+
+                // (Aquí iría la lógica para llamar a métodos definidos por el usuario)
+            }
+            // --- CASO 2: Es una simple VARIABLE (ej. l_int) ---
+            else
+            {
+                object identifier = Visit(context.designator());
                 if (identifier is LocalBuilder local)
                 {
-                    // Ldloc: "Load Local". Carga el valor de la variable local en la pila.
                     _ilGenerator.Emit(OpCodes.Ldloc, local);
                     return local.LocalType;
                 }
                 if (identifier is FieldBuilder field)
                 {
-                    // Ldsfld: "Load Static Field". Carga el valor del campo de clase en la pila.
-                    _ilGenerator.Emit(OpCodes.Ldsfld, field); 
+                    _ilGenerator.Emit(OpCodes.Ldsfld, field);
                     return field.FieldType;
                 }
             }
-    
-            // NOTA: Aquí iría la lógica para manejar llamadas a métodos que devuelven un valor.
-    
-            return typeof(void); // Devolvemos un tipo por defecto en caso de error.
+
+            return typeof(void); // Fallback.
         }
 
         public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context)
@@ -1208,11 +1195,11 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-            // 1. Obtiene el nombre del identificador que se está buscando (ej. "x", "contador").
-            //    Tu gramática asegura que siempre habrá al menos un ID.
+           
+            // 1. Obtiene el nombre del identificador que se está buscando (ej. "origen", "p", "x").
             string varName = context.ID(0).GetText();
 
-            // 2. Llama a nuestro nuevo método unificado "FindIdentifier" para encontrar la variable.
+            // 2. Llama a nuestro método unificado "FindIdentifier" para encontrar la variable.
             //    Este método ya sabe buscar tanto en locales como en campos de clase.
             //    El resultado será un objeto LocalBuilder, un FieldBuilder, o null si no se encuentra.
             return FindIdentifier(varName); 
