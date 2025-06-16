@@ -352,7 +352,6 @@ namespace MiniCSharp
             txtOutput.Text = "Iniciando compilación...";
             Application.DoEvents();
 
-            // Llamada al método correcto de nuestra clase Compiler
             var result = Compiler.CompileAndRun(state.FilePath);
 
             if (!result.Success)
@@ -363,9 +362,10 @@ namespace MiniCSharp
             }
             else
             {
+                // --- CÓDIGO CORREGIDO ---
+                // Se elimina la línea que mostraba el ExecutablePath
                 txtOutput.ForeColor = Color.FromArgb(173, 216, 230); // Azul claro
-                txtOutput.Text = "--- COMPILACIÓN EXITOSA ---\n";
-                txtOutput.Text += "Ejecutable creado en: " + result.ExecutablePath + "\n\n";
+                txtOutput.Text = "--- COMPILACIÓN EXITOSA ---\n\n";
                 txtOutput.Text += "--- SALIDA DEL PROGRAMA ---\n";
                 txtOutput.Text += result.Output;
             }

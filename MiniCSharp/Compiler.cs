@@ -1,123 +1,126 @@
-namespace MiniCSharp;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using Antlr4.Runtime;
-using MiniCSharp.Grammar.Checker;     
-using MiniCSharp.Grammar.encoder;    
-using parser.generated; 
-
-public class Compiler
+// Compiler.cs (Versión Final para Ejecución en Memoria)
+namespace MiniCSharp
 {
-    // Clase de apoyo para el resultado de la compilación (sin cambios)
-    public class CompilationResult
-    {
-        public bool Success { get; set; }
-        public List<string> Errors { get; set; } = new List<string>();
-        public string ExecutablePath { get; set; }
-        public string Output { get; set; }
-    }
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Reflection;
+    using Antlr4.Runtime;
+    using MiniCSharp.Grammar.Checker;
+    using MiniCSharp.Grammar.encoder;
+    using parser.generated;
 
-    // El método principal que orquesta todo el proceso
-    public static CompilationResult CompileAndRun(string filePath)
+    public static class Compiler
     {
-        var result = new CompilationResult();
-
-        try
+        public class CompilationResult
         {
-            // --- FASE 1: Análisis Léxico y Sintáctico ---
-            string sourceCode = File.ReadAllText(filePath);
-            var inputStream = new AntlrInputStream(sourceCode);
-            var lexer = new MiniCSharpLexer(inputStream); // Ahora se resuelve
-            var tokenStream = new CommonTokenStream(lexer);
-            var parser = new MiniCSharpParser(tokenStream); // Ahora se resuelve
+            public bool Success { get; set; }
+            public List<string> Errors { get; set; } = new List<string>();
+            public string Output { get; set; }
+        }
 
-            var syntaxErrorListener = new SyntaxErrorListener();
-            parser.RemoveErrorListeners();
-            parser.AddErrorListener(syntaxErrorListener);
+        public static CompilationResult CompileAndRun(string filePath)
+        {
+            var result = new CompilationResult();
+            Assembly generatedAssembly = null;
 
-            var tree = parser.program(); // El método de tu regla inicial (prog)
-
-            if (syntaxErrorListener.Errors.Count > 0)
+            try
             {
-                result.Success = false;
-                result.Errors.AddRange(syntaxErrorListener.Errors);
-                return result;
-            }
+                // Fases 1 & 2: Parsing y Checking (sin cambios)
+                string sourceCode = File.ReadAllText(filePath);
+                var inputStream = new AntlrInputStream(sourceCode);
+                var lexer = new MiniCSharpLexer(inputStream);
+                var tokenStream = new CommonTokenStream(lexer);
+                var parser = new MiniCSharpParser(tokenStream);
 
-            // --- FASE 2: Análisis Semántico ---
-            // FIX: Usamos el nombre exacto de tu clase 'MiniCsharpChecker'
-            var checker = new MiniCsharpChecker(); 
-            checker.Visit(tree);
+                var syntaxErrorListener = new SyntaxErrorListener();
+                parser.RemoveErrorListeners();
+                parser.AddErrorListener(syntaxErrorListener);
 
-            if (checker.Errors.Count > 0)
-            {
-                result.Success = false;
-                result.Errors.AddRange(checker.Errors);
-                return result;
-            }
+                var tree = parser.program();
 
-            // --- FASE 3: Generación de Código ---
-            string outputExePath = Path.ChangeExtension(filePath, ".exe");
-            // FIX: Usamos el nombre exacto de tu clase 'CodeGen'
-            var codeGenerator = new CodeGen(outputExePath); 
-            codeGenerator.Visit(tree);
-            // FIX: Llamamos al método para guardar que creaste en tu CodeGen
-            codeGenerator.SaveAssembly();
-
-            result.ExecutablePath = outputExePath;
-
-            // --- FASE 4: Ejecución ---
-            if (File.Exists(result.ExecutablePath))
-            {
-                Process process = new Process();
-                process.StartInfo.FileName = result.ExecutablePath;
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = true;
-                process.StartInfo.RedirectStandardError = true;
-                process.StartInfo.CreateNoWindow = true;
-                
-                process.Start();
-
-                string output = process.StandardOutput.ReadToEnd();
-                string errorOutput = process.StandardError.ReadToEnd();
-                
-                process.WaitForExit();
-                
-                result.Success = true;
-                result.Output = output;
-                if (!string.IsNullOrEmpty(errorOutput))
+                if (syntaxErrorListener.Errors.Count > 0)
                 {
-                    result.Output += "\n--- Errores de Ejecución ---\n" + errorOutput;
+                    result.Success = false;
+                    result.Errors.AddRange(syntaxErrorListener.Errors);
+                    return result;
+                }
+
+                var checker = new MiniCsharpChecker();
+                checker.Visit(tree);
+
+                if (checker.Errors.Count > 0)
+                {
+                    result.Success = false;
+                    result.Errors.AddRange(checker.Errors);
+                    return result;
+                }
+
+                // Fase 3: Generación de Código en Memoria
+                var codeGenerator = new CodeGen(); // Llama al constructor corregido
+                generatedAssembly = (Assembly)codeGenerator.Visit(tree); // Visit(tree) devuelve el Assembly
+                result.Success = true;
+            }
+            catch (Exception ex)
+            {
+                result.Success = false;
+                result.Errors.Add($"Error fatal durante la compilación: {ex.Message}\n{ex.StackTrace}");
+                return result;
+            }
+
+            // Fase 4: Ejecución desde Memoria con Reflection
+            if (result.Success && generatedAssembly != null)
+            {
+                var originalConsoleOut = Console.Out;
+                using (var writer = new StringWriter())
+                {
+                    Console.SetOut(writer);
+                    try
+                    {
+                        MethodInfo mainMethod = null;
+                        // Buscamos en todos los tipos definidos en nuestro ensamblado
+                        foreach (var type in generatedAssembly.GetTypes())
+                        {
+                            mainMethod = type.GetMethod("Main");
+                            if (mainMethod != null) break;
+                        }
+
+                        if (mainMethod != null)
+                        {
+                            mainMethod.Invoke(null, null); // Invocamos el método Main
+                        }
+                        else
+                        {
+                            writer.Write("Error de ejecución: No se encontró el método 'Main'.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var innerEx = ex.InnerException ?? ex;
+                        writer.Write($"--- ERROR EN TIEMPO DE EJECUCIÓN ---\n");
+                        writer.Write($"Error: {innerEx.Message}\n");
+                        writer.Write($"Stack Trace:\n{innerEx.StackTrace}");
+                    }
+                    finally
+                    {
+                        result.Output = writer.ToString();
+                        Console.SetOut(originalConsoleOut);
+                    }
                 }
             }
-            else
-            {
-                result.Success = false;
-                result.Errors.Add("Error: La generación de código no produjo un archivo ejecutable.");
-            }
+            return result;
         }
-        catch (Exception ex)
-        {
-            result.Success = false;
-            result.Errors.Add($"Error fatal del compilador: {ex.Message}\n{ex.StackTrace}");
-        }
-
-        return result;
     }
-}
 
-public class SyntaxErrorListener : BaseErrorListener
-{
-    public readonly List<string> Errors = new List<string>();
-
-    // Esta es la firma más probable que tu versión de ANTLR espera.
-    // Incluye el parámetro 'TextWriter output'.
-    public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+    // Tu SyntaxErrorListener
+    public class SyntaxErrorListener : BaseErrorListener
     {
-        // El cuerpo del método no cambia.
-        string errorMessage = $"Error Sintáctico: {msg} (línea {line}, columna {charPositionInLine + 1})";
-        Errors.Add(errorMessage);
+        public readonly List<string> Errors = new List<string>();
+
+        public override void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
+        {
+            string errorMessage = $"Error Sintáctico: {msg} (línea {line}, columna {charPositionInLine + 1})";
+            Errors.Add(errorMessage);
+        }
     }
 }
