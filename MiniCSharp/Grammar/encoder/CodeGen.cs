@@ -271,7 +271,7 @@ namespace MiniCSharp.Grammar.encoder
                 // NOTA: Para argumentos estáticos, su índice CIL empieza en 0.
                 // Si fueran métodos de instancia, empezarían en 1 (el 0 es 'this').
                 var localBuilder = _ilGenerator.DeclareLocal(type);
-                localBuilder.SetLocalSymInfo(name); // Opcional: para depuración
+                //localBuilder.SetLocalSymInfo(name); // Opcional: para depuración
                 _scopedLocalVariables.Last()[name] = localBuilder;
                 _ilGenerator.Emit(OpCodes.Ldarg, i); // Cargar argumento
                 _ilGenerator.Emit(OpCodes.Stloc, localBuilder); // Guardar en variable local

@@ -2,6 +2,8 @@ using Antlr4.Runtime.Tree;
 using Antlr4.Runtime;
 using parser.generated;
 using System.Collections.Generic;
+using System;
+using System.Linq;
 
 namespace MiniCSharp.Grammar.Checker
 {
