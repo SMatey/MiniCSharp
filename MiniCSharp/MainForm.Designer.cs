@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace Compiladores;
+namespace MiniCSharp;
 
 partial class MainForm: System.Windows.Forms.Form
 {

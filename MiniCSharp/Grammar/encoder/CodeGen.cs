@@ -19,6 +19,7 @@ namespace MiniCSharp.Grammar.encoder
         private readonly Dictionary<string, FieldBuilder> _classFields;
         private readonly string _outputFileName;
         private readonly AssemblyName _assemblyName;
+        private readonly Dictionary<string, MethodBuilder> _userDefinedMethods = new();
         private readonly AssemblyBuilder _assemblyBuilder;
         private readonly ModuleBuilder _moduleBuilder;
         private TypeBuilder _typeBuilder;
@@ -33,38 +34,32 @@ namespace MiniCSharp.Grammar.encoder
         private readonly Dictionary<string, MethodInfo> _predeclaredMethods;
         public static int RuntimeOrd(char c) { return (int)c; }
         public static char RuntimeChr(int i) { return (char)i; }
-        
-        // Referencia al constructor de la clase y al método Main
         private MethodBuilder _mainMethodBuilder;
-        private Type _currentSwitchExprType;        // Diccionario para registrar variables locales
-        private readonly Dictionary<ParserRuleContext, LocalBuilder> _localVariables;
-
-        /// <summary>
-        /// El constructor prepara los objetos base para crear un ensamblado (.exe) dinámico.
-        /// </summary>
-        public CodeGen()
+        private Type _currentSwitchExprType;        
+        
+        
+        public CodeGen(string outputFileName = "MiniCSharpOutput.dll")
         {
+            _outputFileName = outputFileName;
             _assemblyName = new AssemblyName("MiniCSharpOutput");
             _assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(_assemblyName, AssemblyBuilderAccess.Run);
             _moduleBuilder = _assemblyBuilder.DefineDynamicModule("MiniCSharpModule");
 
-            // --- LÍNEAS DE INICIALIZACIÓN (SIN CAMBIOS) ---
             _consoleWriteLineIntMethod = typeof(Console).GetMethod("WriteLine", new[] { typeof(int) });
             _consoleWriteLineStringMethod = typeof(Console).GetMethod("WriteLine", new[] { typeof(string) });
             _consoleWriteStringMethod = typeof(Console).GetMethod("Write", new[] { typeof(string) });
             _consoleReadLineMethod = typeof(Console).GetMethod("ReadLine", Type.EmptyTypes);
             _classFields = new Dictionary<string, FieldBuilder>();
-            _localVariables = new Dictionary<ParserRuleContext, LocalBuilder>();
+            _userDefinedMethods = new Dictionary<string, MethodBuilder>();
             _scopedLocalVariables = new List<Dictionary<string, LocalBuilder>>();
             _breakTargets = new Stack<Label>();
-    
-            // --- LÓGICA DE BÚSQUEDA CORREGIDA ---
+
             _predeclaredMethods = new Dictionary<string, MethodInfo>();
-    
-            // CORRECCIÓN: Se cambia 'NonPublic' por 'Public' para que encuentre los métodos.
             var bindingFlags = BindingFlags.Public | BindingFlags.Static;
-            _predeclaredMethods["ord"] = this.GetType().GetMethod("RuntimeOrd", bindingFlags);
-            _predeclaredMethods["chr"] = this.GetType().GetMethod("RuntimeChr", bindingFlags);
+            _predeclaredMethods["ord"] = this.GetType().GetMethod("RuntimeOrd", bindingFlags) 
+                                         ?? throw new InvalidOperationException("No se encontró método RuntimeOrd");
+            _predeclaredMethods["chr"] = this.GetType().GetMethod("RuntimeChr", bindingFlags) 
+                                         ?? throw new InvalidOperationException("No se encontró método RuntimeChr");
         }
         
         // --- MÉTODOS AUXILIARES PARA GESTIÓN DE ÁMBITOS ---
@@ -75,26 +70,18 @@ namespace MiniCSharp.Grammar.encoder
 
         private void CloseScope()
         {
-            if (_scopedLocalVariables.Count > 0)
-            {
-                _scopedLocalVariables.RemoveAt(_scopedLocalVariables.Count - 1);
-            }
+            if (_scopedLocalVariables.Count == 0)
+                throw new InvalidOperationException("No hay ámbitos abiertos para cerrar.");
+            _scopedLocalVariables.RemoveAt(_scopedLocalVariables.Count - 1);
         }
 
         private LocalBuilder DeclareLocal(string name, Type type)
         {
-            // El ámbito actual es el último diccionario de la lista.
             var currentScope = _scopedLocalVariables.LastOrDefault();
             if (currentScope == null)
-            {
-                // No debería pasar si siempre se llama dentro de un ámbito abierto (ej. un método).
                 throw new InvalidOperationException("No se puede declarar una variable fuera de un ámbito.");
-            }
             if (currentScope.ContainsKey(name))
-            {
-                // El checker ya debería haber detectado esto, pero es una buena defensa.
                 throw new InvalidOperationException($"La variable '{name}' ya está definida en el ámbito actual.");
-            }
 
             LocalBuilder localBuilder = _ilGenerator.DeclareLocal(type);
             currentScope[name] = localBuilder;
@@ -103,28 +90,12 @@ namespace MiniCSharp.Grammar.encoder
 
         private object FindIdentifier(string name)
         {
-            // 1. Busca en las variables locales, comenzando por el ámbito más reciente (el último en la lista)
-            //    y retrocediendo hacia los ámbitos más globales.
             foreach (var scope in Enumerable.Reverse(_scopedLocalVariables))
-            {
                 if (scope.TryGetValue(name, out LocalBuilder local))
-                {
-                    // ¡Encontrado! Es una variable local. La devolvemos.
                     return local;
-                }
-            }
-
-            // 2. Si el bucle termina y no se encontró la variable local,
-            //    buscamos en el diccionario de campos de clase.
             if (_classFields.TryGetValue(name, out FieldBuilder field))
-            {
-                // ¡Encontrado! Es un campo de clase. Lo devolvemos.
                 return field;
-            }
-
-            // 3. Si no se encontró en ningún lado, devolvemos null.
-            //    (El checker semántico ya debería haber reportado un error de "variable no declarada").
-            return null; 
+            return null; // El checker debe evitar que esto pase en generación de código
         }
         public void SaveAssembly()
         {
@@ -142,9 +113,12 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitProg(MiniCSharpParser.ProgContext context)
         {
-            string className = context.ID().GetText();
+            _userDefinedMethods.Clear();
+            
+            string className = context.ID()?.GetText() ?? "MainClass";
             _typeBuilder = _moduleBuilder.DefineType(className, TypeAttributes.Public | TypeAttributes.Class);
 
+            // Procesa las declaraciones: variables, métodos, clases
             if (context.children != null)
             {
                 foreach (var child in context.children)
@@ -157,12 +131,30 @@ namespace MiniCSharp.Grammar.encoder
                     }
                 }
             }
-            
-            // Finalizamos la creación del tipo.
-            Type? finalType = _typeBuilder.CreateType();
 
-            // Devolvemos el ensamblado que contiene nuestro nuevo tipo.
-            return finalType.Assembly;
+            // Finaliza el tipo y lo obtiene
+            Type finalType = _typeBuilder.CreateType();
+
+            // Busca el método Main estático (entry point)
+            MethodInfo main = finalType.GetMethod("Main", BindingFlags.Public | BindingFlags.Static);
+            if (main != null)
+            {
+                try
+                {
+                    main.Invoke(null, null); // Ejecuta el programa generado en memoria
+                }
+                catch (Exception ex)
+                {
+                    // Puedes propagar o mostrar este error como "Runtime Error"
+                    throw new Exception("Error en tiempo de ejecución en el método Main.", ex);
+                }
+            }
+            else
+            {
+                throw new Exception("No se encontró un método Main público y estático en la clase principal.");
+            }
+
+            return finalType.Assembly; // Devuelve el ensamblado por si lo necesitas
         }
 
         public override object VisitUsingStat(MiniCSharpParser.UsingStatContext context)
@@ -263,39 +255,44 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitMethodDeclaration(MiniCSharpParser.MethodDeclarationContext context)
         {
-              // 1. Obtener los tipos de .NET para los parámetros del método.
+            // 1. Obtener información de los parámetros
             var paramInfo = new List<(Type type, string name)>();
             if (context.formPars() != null)
             {
-                // VisitFormalParams se encarga de devolver la lista de tipos y nombres.
                 var result = Visit(context.formPars());
                 if (result is List<(Type, string)> info)
-                {
                     paramInfo = info;
-                }
             }
             var paramTypes = paramInfo.Select(p => p.type).ToArray();
 
-            // 2. Obtener el tipo de retorno del método.
+            // 2. Tipo de retorno (void o el tipo correspondiente)
             Type returnType = (context.VOID() != null) ? typeof(void) : GetTypeFromTypeName(context.type().GetText());
 
-            // 3. Usar el TypeBuilder para DEFINIR el método en el ensamblado.
+            // 3. Definir el método en el TypeBuilder
             string methodName = context.ID().GetText();
             MethodBuilder methodBuilder = _typeBuilder.DefineMethod(
                 methodName,
-                MethodAttributes.Public | MethodAttributes.Static, // Todos los métodos son públicos y estáticos
+                MethodAttributes.Public | MethodAttributes.Static,
                 returnType,
                 paramTypes
             );
-            _currentMethod = methodBuilder; // Guardamos una referencia al método actual
+            _currentMethod = methodBuilder;
 
-            // 4. Obtenemos el generador de IL para empezar a escribir el "cuerpo" del método.
+            // ---- CORRECCIÓN CLAVE: Registrar el método en _userDefinedMethods ----
+            if (_userDefinedMethods == null)
+                throw new Exception("El diccionario _userDefinedMethods no está inicializado.");
+            if (_userDefinedMethods.ContainsKey(methodName))
+                throw new Exception($"El método '{methodName}' ya está definido.");
+
+            _userDefinedMethods[methodName] = methodBuilder;
+
+            // 4. Obtener el ILGenerator para este método
             _ilGenerator = methodBuilder.GetILGenerator();
 
-            // 5. Creamos un nuevo ámbito para los parámetros y variables locales del método.
-            OpenScope(); 
+            // 5. Abrir un scope para las variables locales y parámetros
+            OpenScope();
 
-            // 6. Procesamos los parámetros: los cargamos y los guardamos en variables locales.
+            // 6. Procesar los parámetros: definirlos como locales y almacenarlos
             for (int i = 0; i < paramInfo.Count; i++)
             {
                 var (type, name) = paramInfo[i];
@@ -305,17 +302,18 @@ namespace MiniCSharp.Grammar.encoder
                 _ilGenerator.Emit(OpCodes.Stloc, localBuilder);
             }
 
-            // 7. Visitamos el bloque de sentencias que conforma el cuerpo del método.
+            // 7. Generar el cuerpo del método
             if (context.block() != null)
             {
                 Visit(context.block());
             }
 
-            // 8. Cerramos el ámbito del método.
-            CloseScope(); 
-
-            // 9. Emitimos la instrucción de retorno final y limpiamos las variables.
+            // 8. Emitir un "ret" si el último statement no termina con return
+            //    (Opcional: solo si el método no es void y no termina en return puedes lanzar warning)
             _ilGenerator.Emit(OpCodes.Ret);
+
+            // 9. Cerrar el scope y limpiar referencias
+            CloseScope();
             _ilGenerator = null;
             _currentMethod = null;
 
@@ -346,51 +344,54 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitDesignatorStatement(MiniCSharpParser.DesignatorStatementContext context)
          {
-             // 1. Usamos nuestro "GPS" para encontrar la variable.
-            //    Visit(context.designator()) llamará a tu VisitDesignatorNode actualizado,
-            //    que devolverá un LocalBuilder (para locales) o un FieldBuilder (para globales).
-            object identifier = Visit(context.designator()); 
+             object identifier = Visit(context.designator());
 
-            // --- Caso A: Es una asignación (ej. x = 5;) ---
-            if (context.ASSIGN() != null)
-            {
-                // 2. Generamos el código para la expresión del lado derecho (el valor a asignar).
-                Visit(context.expr()); 
+             if (context.ASSIGN() != null)
+             {
+                 Visit(context.expr());
 
-                // 3. Verificamos qué tipo de identificador encontramos y usamos la instrucción CIL correcta.
-                if (identifier is LocalBuilder local)
-                {
-                    // Stloc: "Store Local". Guarda el valor de la pila en la variable local.
-                    _ilGenerator.Emit(OpCodes.Stloc, local); 
-                }
-                else if (identifier is FieldBuilder field)
-                {
-                    // Stsfld: "Store Static Field". Guarda el valor de la pila en el campo de clase.
-                    _ilGenerator.Emit(OpCodes.Stsfld, field); 
-                }
-            }
-            // --- Caso B: Es un incremento o decremento (ej. i++;) ---
-            else if (context.INCREMENT() != null || context.DECREMENT() != null)
-            {
-                // 2. Verificamos qué tipo de identificador es para saber de dónde leer y dónde guardar.
-                if (identifier is LocalBuilder local)
-                {
-                    _ilGenerator.Emit(OpCodes.Ldloc, local);      // Ldloc: Cargar valor local
-                    _ilGenerator.Emit(OpCodes.Ldc_I4_1);          // Cargar el número 1
-                    _ilGenerator.Emit(context.INCREMENT() != null ? OpCodes.Add : OpCodes.Sub); // Sumar/Restar
-                    _ilGenerator.Emit(OpCodes.Stloc, local);      // Stloc: Guardar valor local
-                }
-                else if (identifier is FieldBuilder field)
-                {
-                    _ilGenerator.Emit(OpCodes.Ldsfld, field);     // Ldsfld: Cargar valor del campo estático
-                    _ilGenerator.Emit(OpCodes.Ldc_I4_1);          // Cargar el número 1
-                    _ilGenerator.Emit(context.INCREMENT() != null ? OpCodes.Add : OpCodes.Sub); // Sumar/Restar
-                    _ilGenerator.Emit(OpCodes.Stsfld, field);     // Stsfld: Guardar valor en campo estático
-                }
-            }
-            // NOTA: Aquí también se manejaría una llamada a método como una sentencia, por ejemplo: MiMetodo();
+                 if (identifier is LocalBuilder local)
+                 {
+                     _ilGenerator.Emit(OpCodes.Stloc, local);
+                 }
+                 else if (identifier is FieldBuilder field)
+                 {
+                     _ilGenerator.Emit(OpCodes.Stsfld, field);
+                 }
+                 else
+                 {
+                     throw new Exception("Asignación a un identificador desconocido o tipo no soportado.");
+                 }
+             }
+             else if (context.INCREMENT() != null || context.DECREMENT() != null)
+             {
+                 if (identifier is LocalBuilder local)
+                 {
+                     _ilGenerator.Emit(OpCodes.Ldloc, local);
+                     _ilGenerator.Emit(OpCodes.Ldc_I4_1);
+                     _ilGenerator.Emit(context.INCREMENT() != null ? OpCodes.Add : OpCodes.Sub);
+                     _ilGenerator.Emit(OpCodes.Stloc, local);
+                 }
+                 else if (identifier is FieldBuilder field)
+                 {
+                     _ilGenerator.Emit(OpCodes.Ldsfld, field);
+                     _ilGenerator.Emit(OpCodes.Ldc_I4_1);
+                     _ilGenerator.Emit(context.INCREMENT() != null ? OpCodes.Add : OpCodes.Sub);
+                     _ilGenerator.Emit(OpCodes.Stsfld, field);
+                 }
+                 else
+                 {
+                     throw new Exception("Incremento/decremento sobre identificador desconocido o tipo no soportado.");
+                 }
+             }
+             // Opción: aquí puedes manejar llamadas a métodos tipo foo();
+             else
+             {
+                 // Si lo necesitas, puedes lanzar una excepción o implementar lógica para llamadas a métodos sin parámetros.
+                 // throw new Exception("DesignatorStatement no soportado aún.");
+             }
 
-            return null;
+             return null;
          }
 
         public override object VisitIfStatement(MiniCSharpParser.IfStatementContext context)
@@ -569,71 +570,75 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitReadStatement(MiniCSharpParser.ReadStatementContext context)
         {
-            // La variable a la que se asignará el valor leído.
             object designatorResult = Visit(context.designator());
             if (designatorResult is LocalBuilder local)
             {
-                // MethodInfo para Console.ReadLine()
-                MethodInfo consoleReadLineMethod = typeof(Console).GetMethod("ReadLine", Type.EmptyTypes);
-                _ilGenerator.Emit(OpCodes.Call, consoleReadLineMethod); // Llama a ReadLine, el string resultante está en la pila
+                // Leer como string
+                _ilGenerator.Emit(OpCodes.Call, _consoleReadLineMethod);
 
-                // Convertir el string leído al tipo de la variable local
                 Type targetType = local.LocalType;
-                
-                // Aquí necesitarás lógica de conversión basada en `targetType`
+
                 if (targetType == typeof(int))
                 {
-                    MethodInfo parseIntMethod = typeof(int).GetMethod("Parse", new[] { typeof(string) });
-                    _ilGenerator.Emit(OpCodes.Call, parseIntMethod);
+                    var parseInt = typeof(int).GetMethod("Parse", new[] { typeof(string) });
+                    _ilGenerator.Emit(OpCodes.Call, parseInt);
                 }
                 else if (targetType == typeof(double))
                 {
-                    MethodInfo parseDoubleMethod = typeof(double).GetMethod("Parse", new[] { typeof(string), typeof(IFormatProvider) });
-                    _ilGenerator.Emit(OpCodes.Ldtoken, typeof(CultureInfo));
-                    _ilGenerator.Emit(OpCodes.Call, typeof(Type).GetMethod("GetTypeFromHandle", new[] { typeof(RuntimeTypeHandle) }));
-                    _ilGenerator.Emit(OpCodes.Ldstr, "InvariantCulture");
-                    _ilGenerator.Emit(OpCodes.Call, typeof(CultureInfo).GetMethod("GetProperty", new[] { typeof(string) }));
-                    _ilGenerator.Emit(OpCodes.Callvirt, typeof(PropertyInfo).GetMethod("GetValue", new[] { typeof(object), typeof(object[]) }));
-                    _ilGenerator.Emit(OpCodes.Castclass, typeof(IFormatProvider));
-                    _ilGenerator.Emit(OpCodes.Call, parseDoubleMethod);
+                    var parseDouble = typeof(double).GetMethod("Parse", new[] { typeof(string), typeof(IFormatProvider) });
+                    _ilGenerator.Emit(OpCodes.Ldsfld, typeof(CultureInfo).GetField("InvariantCulture"));
+                    _ilGenerator.Emit(OpCodes.Call, parseDouble);
                 }
                 else if (targetType == typeof(char))
                 {
-                    MethodInfo parseCharMethod = typeof(char).GetMethod("Parse", new[] { typeof(string) });
-                    _ilGenerator.Emit(OpCodes.Call, parseCharMethod);
+                    var parseChar = typeof(char).GetMethod("Parse", new[] { typeof(string) });
+                    _ilGenerator.Emit(OpCodes.Call, parseChar);
                 }
-                // Si el tipo es string, no necesita conversión adicional
-                // Si es bool, necesitarías Boolean.Parse
-                // ...otros tipos
-                else if (targetType != typeof(string))
+                else if (targetType == typeof(bool))
                 {
-                    // Fallback para tipos no implementados explícitamente, intenta una conversión genérica
-                    // Esto puede fallar en runtime si no hay un método Parse o constructor adecuado.
-                    Console.WriteLine($"WARNING: Implicit conversion for 'read' to type {targetType.Name} not fully implemented. May cause runtime errors.");
+                    var parseBool = typeof(bool).GetMethod("Parse", new[] { typeof(string) });
+                    _ilGenerator.Emit(OpCodes.Call, parseBool);
+                }
+                // string: no conversión necesaria
+                else if (targetType == typeof(string))
+                {
+                    // ya está en la pila
+                }
+                else
+                {
+                    throw new NotSupportedException($"No se soporta lectura para el tipo {targetType.Name} en 'read'.");
                 }
 
-                // Guardar el valor convertido en la variable local.
                 _ilGenerator.Emit(OpCodes.Stloc, local);
             }
-            // TODO: Manejar lectura en campos de clase o elementos de array.
+            else
+            {
+                throw new InvalidOperationException("Solo es posible hacer 'read' de variables locales.");
+            }
             return null;
         }
 
         public override object VisitWriteStatement(MiniCSharpParser.WriteStatementContext context)
         {
-            // 1. Visita la expresión dentro de write().
-            //    Esto calculará el valor y lo dejará en la cima de la pila de ejecución.
-            //    El checker semántico ya se ha asegurado de que este valor es compatible con int.
-            Visit(context.expr());
+            // Evaluar la expresión, obtener tipo en tiempo de generación.
+            var typeOnStack = Visit(context.expr()) as Type ?? typeof(int);
 
-            // 2. Llama directamente a la versión de Console.WriteLine que acepta un entero.
-            //    No hay necesidad de adivinar tipos ni hacer conversiones complejas.
-            //    El valor que está en la pila se pasará como argumento.
-            _ilGenerator.Emit(OpCodes.Call, _consoleWriteLineIntMethod);
-    
-            // La parte opcional de la gramática `(COMMA INTLIT)?` no se implementa,
-            // tal como lo permite el enunciado del proyecto.
-
+            if (typeOnStack == typeof(int))
+                _ilGenerator.Emit(OpCodes.Call, _consoleWriteLineIntMethod);
+            else if (typeOnStack == typeof(double) || typeOnStack == typeof(float))
+                _ilGenerator.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new[] { typeof(double) }));
+            else if (typeOnStack == typeof(string))
+                _ilGenerator.Emit(OpCodes.Call, _consoleWriteLineStringMethod);
+            else if (typeOnStack == typeof(char))
+                _ilGenerator.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new[] { typeof(char) }));
+            else if (typeOnStack == typeof(bool))
+                _ilGenerator.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new[] { typeof(bool) }));
+            else
+            {
+                // Si es otro tipo, intenta llamar a ToString
+                _ilGenerator.Emit(OpCodes.Callvirt, typeof(object).GetMethod("ToString"));
+                _ilGenerator.Emit(OpCodes.Call, _consoleWriteLineStringMethod);
+            }
             return null;
         }
         public override object VisitBlockStatement(MiniCSharpParser.BlockStatementContext context)
@@ -1093,30 +1098,35 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitDesignatorFactor(MiniCSharpParser.DesignatorFactorContext context)
         {
-            // --- CASO 1: Es una LLAMADA A MÉTODO (ej. ord(g_char) ) ---
+            // Caso 1: Llamada a método (ej: suma(5,3))
             if (context.LPAREN() != null)
             {
                 string methodName = context.designator().GetText();
 
-                // Si la llamada tiene parámetros...
+                // Empujar argumentos a la pila si hay actPars
                 if (context.actPars() != null)
                 {
-                    // ...visitamos el nodo de parámetros. Esto llamará a nuestro nuevo
-                    // método VisitActualParams para que ponga los argumentos en la pila.
                     Visit(context.actPars());
                 }
 
-                // Ahora que los argumentos (si los hay) están en la pila,
-                // podemos llamar a la función de forma segura.
-                if (_predeclaredMethods.TryGetValue(methodName, out MethodInfo methodInfo))
+                // Predeclarados (ord, chr, etc.)
+                if (_predeclaredMethods != null && _predeclaredMethods.TryGetValue(methodName, out MethodInfo methodInfo))
                 {
                     _ilGenerator.Emit(OpCodes.Call, methodInfo);
                     return methodInfo.ReturnType;
                 }
-
-                // (Aquí iría la lógica para llamar a métodos definidos por el usuario)
+                // Métodos definidos por el usuario
+                else if (_userDefinedMethods != null && _userDefinedMethods.TryGetValue(methodName, out MethodBuilder userMethod))
+                {
+                    _ilGenerator.Emit(OpCodes.Call, userMethod);
+                    return userMethod.ReturnType;
+                }
+                else
+                {
+                    throw new Exception($"Método no encontrado: {methodName}");
+                }
             }
-            // --- CASO 2: Es una simple VARIABLE (ej. l_int) ---
+            // Caso 2: Variable (carga su valor a la pila)
             else
             {
                 object identifier = Visit(context.designator());
@@ -1125,14 +1135,16 @@ namespace MiniCSharp.Grammar.encoder
                     _ilGenerator.Emit(OpCodes.Ldloc, local);
                     return local.LocalType;
                 }
-                if (identifier is FieldBuilder field)
+                else if (identifier is FieldBuilder field)
                 {
                     _ilGenerator.Emit(OpCodes.Ldsfld, field);
                     return field.FieldType;
                 }
+                else
+                {
+                    throw new Exception("Identificador no encontrado o tipo no soportado en DesignatorFactor.");
+                }
             }
-
-            return typeof(void); // Fallback.
         }
 
         public override object VisitIntLitFactor(MiniCSharpParser.IntLitFactorContext context)
@@ -1151,10 +1163,26 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitCharLitFactor(MiniCSharpParser.CharLitFactorContext context)
         {
-            string text = context.CHARLIT().GetText();
-            char value = text.Substring(1, text.Length - 2)[0];
+            string text = context.CHARLIT().GetText(); // Ejemplo:  "'\\n'" o  "'a'"
+            string content = text.Substring(1, text.Length - 2); // Quita las comillas
+            char value;
+
+            if (content.Length == 1)
+            {
+                value = content[0]; // Simple, como 'a'
+            }
+            else if (content.StartsWith("\\"))
+            {
+                // Usa C# parser para escapes (incluyendo unicode)
+                value = System.Text.RegularExpressions.Regex.Unescape(content)[0];
+            }
+            else
+            {
+                throw new Exception($"Literal de carácter inválido: {text}");
+            }
+
             _ilGenerator.Emit(OpCodes.Ldc_I4, (int)value);
-            return typeof(char); // ¡Cambio clave: devuelve el tipo!
+            return typeof(char);
         }
 
         public override object VisitStringLitFactor(MiniCSharpParser.StringLitFactorContext context)
@@ -1195,14 +1223,13 @@ namespace MiniCSharp.Grammar.encoder
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-           
-            // 1. Obtiene el nombre del identificador que se está buscando (ej. "origen", "p", "x").
             string varName = context.ID(0).GetText();
+            var result = FindIdentifier(varName);
 
-            // 2. Llama a nuestro método unificado "FindIdentifier" para encontrar la variable.
-            //    Este método ya sabe buscar tanto en locales como en campos de clase.
-            //    El resultado será un objeto LocalBuilder, un FieldBuilder, o null si no se encuentra.
-            return FindIdentifier(varName); 
+            if (result == null)
+                throw new Exception($"Variable '{varName}' no encontrada en ningún ámbito.");
+
+            return result;
         }
 
         public override object VisitRelationalOp(MiniCSharpParser.RelationalOpContext context)

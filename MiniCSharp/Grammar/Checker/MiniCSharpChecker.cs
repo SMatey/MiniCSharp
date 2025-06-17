@@ -145,25 +145,25 @@ namespace MiniCSharp.Grammar.Checker
             MiniCSharpParser.TypeContext typeRuleContext = context.type();
             object typeResult = Visit(typeRuleContext);
 
+            // Verificar que el tipo sea válido
             if (!(typeResult is int resolvedTypeCode) || resolvedTypeCode == TablaSimbolos.UnknownType)
             {
                 return null;
             }
 
+            // Verificación para evitar el tipo 'void' en variables
             ITerminalNode typeNameTerminalNode = typeRuleContext.GetToken(MiniCSharpLexer.ID, 0);
-            // Es buena práctica comprobar si el nodo terminal (y por ende el token) no es null
-            // aunque para un ID en la regla 'type' debería existir.
             if (typeNameTerminalNode != null && resolvedTypeCode == TablaSimbolos.VoidType && typeNameTerminalNode.Symbol.Text == "void")
             {
                 Errors.Add($"Error: No se puede declarar una variable de tipo 'void' ('{context.GetText()}' en línea {context.Start.Line}).");
                 return null;
             }
 
+            // Verificar si es un array (si se usa LBRACK RBRACK)
             ITerminalNode lbrackNode = typeRuleContext.GetToken(MiniCSharpLexer.LBRACK, 0);
             bool isArray = lbrackNode != null;
 
-            // GetTokens devuelve IList<ITerminalNode> o ITerminalNode[]
-            // Lo trataremos como IList<ITerminalNode> por consistencia con la API de ANTLR.
+            // Obtener todos los identificadores en la declaración (pueden ser múltiples)
             IList<ITerminalNode> idTerminalNodes = context.GetTokens(MiniCSharpLexer.ID);
             if (idTerminalNodes != null)
             {
@@ -172,16 +172,19 @@ namespace MiniCSharp.Grammar.Checker
                     IToken idToken = idNode.Symbol; // Obtener el IToken desde ITerminalNode
                     string varName = idToken.Text;
 
+                    // Verificar si la variable ya está definida en este ámbito
                     if (symbolTable.Buscar(varName) != null && symbolTable.BuscarNivelActual(varName) != null)
                     {
                         Errors.Add($"Error: La variable '{varName}' ya está definida en este ámbito (línea {idToken.Line}).");
                     }
                     else
                     {
+                        // Si no existe, la insertamos en la tabla de símbolos
                         symbolTable.InsertarVar(idToken, resolvedTypeCode, isArray, context);
                     }
                 }
             }
+
             return null;
         }
 
@@ -284,7 +287,8 @@ namespace MiniCSharp.Grammar.Checker
             MiniCSharpParser.TypeContext[] typeNodes = context.type();     
             ITerminalNode[] idTerminalNodes = context.ID();                 
 
-            
+
+            // Verificar que el número de tipos coincida con el número de identificadores
             if (idTerminalNodes != null && typeNodes != null && idTerminalNodes.Length == typeNodes.Length)
             {
                 for (int i = 0; i < idTerminalNodes.Length; i++) 
@@ -293,33 +297,48 @@ namespace MiniCSharp.Grammar.Checker
                     IToken paramToken = idTerminalNodes[i].Symbol; 
                     string paramName = paramToken.Text;
 
+                    // Obtener el tipo del parámetro y validar
                     object typeResult = Visit(typeCtx); 
                     if (!(typeResult is int paramTypeCode) || paramTypeCode == TablaSimbolos.UnknownType)
                     {
                         Errors.Add($"Error: Tipo inválido o desconocido para el parámetro '{paramName}' del método '{this.currentProcessingMethod?.GetName() ?? "actual"}' (línea {paramToken.Line}).");
                         continue; 
                     }
+
+                    // No se permite el tipo 'void' para los parámetros
                     if (paramTypeCode == TablaSimbolos.VoidType)
                     {
-                         Errors.Add($"Error: Un parámetro de método ('{paramName}') no puede ser de tipo 'void' (línea {paramToken.Line}).");
-                         continue;
+                        Errors.Add($"Error: Un parámetro de método ('{paramName}') no puede ser de tipo 'void' (línea {paramToken.Line}).");
+                        continue;
                     }
 
+                    // Comprobar si es un array
                     bool isArray = typeCtx.GetToken(MiniCSharpLexer.LBRACK, 0) != null; 
 
+                    // Comprobar si el parámetro ya está declarado en el método
                     if (this.currentProcessingMethod != null && this.currentProcessingMethod.Params.Any(p => p.GetName() == paramName))
                     {
                         Errors.Add($"Error: Parámetro duplicado '{paramName}' en el método '{this.currentProcessingMethod.GetName()}' (línea {paramToken.Line}).");
                         continue;
                     }
-                    
+
+                    // Insertar el parámetro en la tabla de símbolos
                     if (this.currentProcessingMethod != null) 
                     {
-                        symbolTable.InsertarParam(this.currentProcessingMethod, paramToken, paramTypeCode, isArray, typeCtx, this.currentMethodBodyScopeLevel);
+                        // Asegúrate de que InsertarParam sea llamado correctamente con la nueva firma
+                        symbolTable.InsertarParam(
+                            this.currentProcessingMethod, 
+                            paramToken, 
+                            paramTypeCode, 
+                            isArray, 
+                            typeCtx, 
+                            this.currentMethodBodyScopeLevel
+                        );
                         Console.WriteLine($"Checker DBG: Declarado Parámetro '{paramName}' de tipo {TablaSimbolos.TypeToString(paramTypeCode)}{(isArray ? "[]" : "")} para método '{this.currentProcessingMethod.GetName()}' en nivel {this.currentMethodBodyScopeLevel}");
                     }
                 }
-            } else if (idTerminalNodes == null || typeNodes == null || idTerminalNodes.Length != typeNodes.Length)
+            }
+            else if (idTerminalNodes == null || typeNodes == null || idTerminalNodes.Length != typeNodes.Length)
             {
                 Errors.Add($"Error: Discrepancia en el número de tipos e identificadores para los parámetros del método '{this.currentProcessingMethod?.GetName() ?? "actual"}' (línea {context.Start.Line}).");
             }
@@ -1060,26 +1079,37 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitConditionFactNode(MiniCSharpParser.ConditionFactNodeContext context)
         {
-            // ... (código anterior si lo tenés) ...
-
+            // Obtenemos los tipos de los operandos de la condición (expresiones)
             object leftTypeObj = Visit(context.expr(0));
             object rightTypeObj = Visit(context.expr(1));
 
-            // Corrección: Usa nombres de variables de patrón diferentes (ej: 'tl' para left, 'tr' para right)
+            // Resolvemos los tipos
             int leftType = (leftTypeObj is int tl) ? tl : TablaSimbolos.UnknownType;
             int rightType = (rightTypeObj is int tr) ? tr : TablaSimbolos.UnknownType;
 
-            // ... (resto de tu lógica de comprobación de tipos y retorno) ...
-
+            // Si los tipos son desconocidos, terminamos y devolvemos el tipo booleano (para las condiciones)
             if (leftType == TablaSimbolos.UnknownType || rightType == TablaSimbolos.UnknownType)
             {
-                // Si los tipos ya son desconocidos, no se hace más.
+                return TablaSimbolos.BoolType;
             }
-            else if (leftType != rightType)
+
+            // Verificación de compatibilidad de tipos en la comparación
+            if (leftType != rightType)
             {
                 Errors.Add($"Error: Tipos incompatibles en la comparación relacional: '{TablaSimbolos.TypeToString(leftType)}' y '{TablaSimbolos.TypeToString(rightType)}' (línea {context.Start.Line}).");
             }
 
+            // Validación de operadores lógicos '&&' y '||': Los operandos deben ser de tipo 'bool'
+            if (context.Parent is MiniCSharpParser.ConditionNodeContext)
+            {
+                // Si es una expresión lógica, los operandos deben ser de tipo booleano
+                if (leftType != TablaSimbolos.BoolType || rightType != TablaSimbolos.BoolType)
+                {
+                    Errors.Add($"Error: Los operadores lógicos '&&' o '||' requieren que ambos operandos sean de tipo 'bool', pero se encontró '{TablaSimbolos.TypeToString(leftType)}' y '{TablaSimbolos.TypeToString(rightType)}' (línea {context.Start.Line}).");
+                }
+            }
+
+            // Devolvemos el tipo booleano para las condiciones
             return TablaSimbolos.BoolType;
         }
 
@@ -1390,77 +1420,53 @@ namespace MiniCSharp.Grammar.Checker
 
         public override object VisitDesignatorNode(MiniCSharpParser.DesignatorNodeContext context)
         {
-            // El designador siempre comienza con un ID (el nombre base de la variable, campo, o método).
             IToken firstToken = context.ID(0).Symbol;
             string firstName = firstToken.Text;
-            int line = firstToken.Line; // Usamos la línea del primer token para errores iniciales
+            int line = firstToken.Line;
 
-            // 1. Buscar la entrada base en la tabla de símbolos.
             TablaSimbolos.Ident currentIdent = symbolTable.Buscar(firstName);
 
             if (currentIdent == null)
             {
                 Errors.Add($"Error: El identificador '{firstName}' no ha sido declarado (línea {line}).");
-                return null; // No se puede resolver el designador.
+                return null;
             }
 
-            // 2. Procesar las partes adicionales del designador (DOT ID o LBRACK expr RBRACK)
-            // Usamos índices para ID y expr porque context.ID() y context.expr() dan listas.
-            int idIndex = 1;   // ID(0) ya lo usamos, empezamos en ID(1) para miembros
-            int exprIndex = 0; // Para acceder a las expresiones de índice en un array
+            int idIndex = 1;
+            int exprIndex = 0;
 
-            // Iteramos sobre todos los hijos del contexto del designador, saltándonos el primer ID.
-            // Los hijos serán DOT, LBRACK, ID de miembro, Expr de índice, RBRACK, etc.
             foreach (var suffix in context.children.Skip(1))
             {
-                // Si en algún punto el identificador actual es nulo (por un error anterior en la cadena del designador),
-                // salimos para evitar NullReferenceException.
                 if (currentIdent == null) return null;
 
-                // Comprobamos si el hijo actual es un nodo terminal (un token como '.' o '[').
                 if (suffix is Antlr4.Runtime.Tree.ITerminalNode termNode)
                 {
-                    // Acceso a miembro: obj.member
                     if (termNode.Symbol.Type == MiniCSharpLexer.DOT)
                     {
-                        // Verificar que el identificador actual sea una clase o un objeto de clase.
-                        // Tu primera versión comprueba si es 'ClassIdent'
-                        // Tu segunda versión comprueba si es 'VarIdent' cuyo 'Type' es 'ClassType'
-                        // La segunda versión es más robusta porque una variable de clase es una VarIdent.
+                        // Si es un acceso a miembro de clase
                         if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || varIdent.Type != TablaSimbolos.ClassType)
                         {
                             Errors.Add($"Error: El operador '.' solo se puede aplicar a un objeto de una clase, pero '{currentIdent.GetName()}' no lo es (línea {termNode.Symbol.Line}).");
                             return null;
                         }
 
-                        // Necesitamos el ClassIdent que define la estructura de la clase
-                        // La segunda versión tiene una lógica más completa para obtener el ClassIdent desde VarIdent.DeclCtx
-                        TablaSimbolos.ClassIdent classDef = null;
-                        if (varIdent.DeclCtx is MiniCSharpParser.VarDeclarationContext varDeclCtx)
-                        {
-                            if (varDeclCtx.type() is MiniCSharpParser.TypeIdentContext typeIdentCtx)
-                            {
-                                string className = typeIdentCtx.ID().GetText();
-                                classDef = symbolTable.Buscar(className) as TablaSimbolos.ClassIdent;
-                            }
-                        }
-                        
+                        // Definir la clase que contiene el miembro
+                        TablaSimbolos.ClassIdent classDef = symbolTable.Buscar(varIdent.Type.ToString()) as TablaSimbolos.ClassIdent;
+
                         if (classDef == null)
                         {
-                            Errors.Add($"Error interno: No se pudo resolver la definición de clase para '{varIdent.GetName()}' (línea {varIdent.Token.Line}).");
+                            Errors.Add($"Error: No se pudo resolver la definición de clase para '{varIdent.GetName()}' (línea {varIdent.Token.Line}).");
                             return null;
                         }
 
-                        // Obtener el nombre del miembro (el ID después del DOT)
-                        // Usamos idIndex para obtener el siguiente ID de la lista context.ID()
                         string fieldName = context.ID(idIndex++)?.GetText();
-                        if (string.IsNullOrEmpty(fieldName)) // Si no hay ID después del DOT, es un error sintáctico o de estructura de árbol
+                        if (string.IsNullOrEmpty(fieldName))
                         {
                             Errors.Add($"Error: Se esperaba un nombre de miembro después de '.' (línea {termNode.Symbol.Line}).");
                             return null;
                         }
 
-                        // Buscar el miembro en la tabla de símbolos de la clase.
+                        // Buscar el miembro dentro de la clase
                         TablaSimbolos.Ident memberIdent = classDef.Members.Buscar(fieldName);
                         if (memberIdent == null)
                         {
@@ -1468,19 +1474,18 @@ namespace MiniCSharp.Grammar.Checker
                             return null;
                         }
 
-                        currentIdent = memberIdent; // El nuevo identificador actual es el miembro encontrado
+                        currentIdent = memberIdent;
                     }
-                    // Acceso a array: arr[index]
                     else if (termNode.Symbol.Type == MiniCSharpLexer.LBRACK)
                     {
-                        // Verificar que el identificador actual sea una variable de tipo array.
+                        // Verificar si es un array
                         if (!(currentIdent is TablaSimbolos.VarIdent varIdent) || !varIdent.IsArray)
                         {
                             Errors.Add($"Error: Solo se pueden indexar arrays. '{currentIdent.GetName()}' no es un array (línea {termNode.Symbol.Line}).");
                             return null;
                         }
 
-                        // Obtener la expresión del índice
+                        // Verificar el tipo del índice
                         MiniCSharpParser.ExprContext indexExprCtx = context.expr(exprIndex++);
                         if (indexExprCtx == null)
                         {
@@ -1488,39 +1493,27 @@ namespace MiniCSharp.Grammar.Checker
                             return null;
                         }
 
-                        // Visitar la expresión para obtener su tipo.
                         object indexTypeResult = Visit(indexExprCtx);
                         int indexType = (indexTypeResult is int t) ? t : TablaSimbolos.UnknownType;
 
-                        // Verificar que el tipo del índice sea int.
                         if (indexType != TablaSimbolos.IntType)
                         {
                             Errors.Add($"Error: El índice de un array debe ser una expresión de tipo 'int', no '{TablaSimbolos.TypeToString(indexType)}' (línea {indexExprCtx.Start.Line}).");
                             return null;
                         }
-                        
-                        // IMPORTANTE: Cuando se accede a un elemento de un array, el resultado ya no es un array.
-                        // Si tu VarIdent tiene un campo para el "tipo base" del array, úsalo aquí.
-                        // Aquí, asumo que `varIdent.Type` ya es el tipo base del array.
+
+                        // Aquí aseguramos que si el tipo del array es de clase, lo tratamos como tal
                         currentIdent = new TablaSimbolos.VarIdent(
                             varIdent.Token,
-                            varIdent.Type, // El tipo de la variable original (ej: int si es int[]).
-                            false,         // isArray: false, porque ya accedimos a un elemento.
+                            varIdent.Type,
+                            false,
                             varIdent.DeclCtx,
                             varIdent.Nivel
                         );
                     }
-                    // Si llegamos a un token que no es DOT ni LBRACK aquí, y no es el primer ID,
-                    // podría ser un RBRACK u otro token que no esperábamos.
-                    // La estructura del bucle `foreach (var suffix in context.children.Skip(1))` es propensa a esto
-                    // si la gramática de ANTLR no agrupa el DOT ID y LBRACK expr RBRACK como un único 'suffix' context.
-                    // Por eso, la comprobación explícita `if (suffix is ITerminalNode termNode)` es crucial.
                 }
-                // Nota: No necesitamos manejar el RBRACK explícitamente como un sufijo en el bucle
-                // porque ya se "consume" como parte de la regla LBRACK expr RBRACK.
             }
 
-            // Devolvemos la entrada final resuelta del designador (el Ident de la variable, campo o elemento de array).
             return currentIdent;
         }
 

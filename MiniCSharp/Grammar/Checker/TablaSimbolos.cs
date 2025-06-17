@@ -10,6 +10,7 @@ namespace MiniCSharp
         private List<Ident> tabla;
         private int nivelActual;
 
+        // Tipos soportados
         public const int IntType = 0;
         public const int DoubleType = 1;
         public const int CharType = 2;
@@ -29,6 +30,7 @@ namespace MiniCSharp
 
         public int NivelActual => nivelActual;
 
+        // Identificador base para todas las entradas
         public abstract class Ident
         {
             public IToken Token { get; set; }
@@ -36,15 +38,7 @@ namespace MiniCSharp
             public int Nivel { get; set; }
             public ParserRuleContext DeclCtx { get; set; }
 
-            protected Ident(IToken token, int type, ParserRuleContext declCtx, int currentNivel)
-            {
-                this.Token = token;
-                this.Type = type;
-                this.Nivel = currentNivel;
-                this.DeclCtx = declCtx;
-            }
-
-            protected Ident(IToken token, int type, int nivel, ParserRuleContext declCtx)
+            protected Ident(IToken token, int type, ParserRuleContext declCtx, int nivel)
             {
                 this.Token = token;
                 this.Type = type;
@@ -55,29 +49,26 @@ namespace MiniCSharp
             public string GetName() => Token.Text;
         }
 
+        // Variable: Puede ser un tipo simple o un array
         public class VarIdent : Ident
         {
             public bool IsArray { get; set; }
 
-            public VarIdent(IToken token, int type, bool isArray, ParserRuleContext declCtx, int currentNivel)
-                : base(token, type, declCtx, currentNivel)
-            {
-                this.IsArray = isArray;
-            }
-            public VarIdent(IToken token, int type, int nivel, bool isArray, ParserRuleContext declCtx)
-                : base(token, type, nivel, declCtx)
+            public VarIdent(IToken token, int type, bool isArray, ParserRuleContext declCtx, int nivel)
+                : base(token, type, declCtx, nivel)
             {
                 this.IsArray = isArray;
             }
         }
 
+        // Método: Con una lista de parámetros
         public class MethodIdent : Ident
         {
             public List<ParamIdent> Params { get; private set; }
             public int ReturnType => Type;
 
-            public MethodIdent(IToken token, int returnType, ParserRuleContext declCtx, int currentNivel)
-                : base(token, returnType, declCtx, currentNivel)
+            public MethodIdent(IToken token, int returnType, ParserRuleContext declCtx, int nivel)
+                : base(token, returnType, declCtx, nivel)
             {
                 this.Params = new List<ParamIdent>();
             }
@@ -88,25 +79,28 @@ namespace MiniCSharp
             }
         }
 
+        // Parámetro de método: Es un tipo de VarIdent
         public class ParamIdent : VarIdent
         {
-            public ParamIdent(IToken token, int type, bool isArray, ParserRuleContext declCtx, int methodBodyNivel)
-                : base(token, type, methodBodyNivel, isArray, declCtx)
+            public ParamIdent(IToken token, int type, bool isArray, ParserRuleContext declCtx, int nivel)
+                : base(token, type, isArray, declCtx, nivel)
             {
             }
         }
 
+        // Clase: Tiene miembros (variables y métodos)
         public class ClassIdent : Ident
         {
             public TablaSimbolos Members { get; private set; }
 
-            public ClassIdent(IToken token, ParserRuleContext declCtx, int currentNivel)
-                : base(token, ClassType, declCtx, currentNivel)
+            public ClassIdent(IToken token, ParserRuleContext declCtx, int nivel)
+                : base(token, ClassType, declCtx, nivel)
             {
                 this.Members = new TablaSimbolos();
             }
         }
 
+        // Manejo de scopes
         public void OpenScope()
         {
             this.nivelActual++;
@@ -119,91 +113,60 @@ namespace MiniCSharp
             this.nivelActual--;
         }
 
-        public Ident InsertarVar(IToken idToken, int type, bool isArray, ParserRuleContext declCtx)
+        // Inserción genérica de identificadores
+        private Ident InsertarIdent(IToken idToken, int type, ParserRuleContext declCtx, int nivel, Ident newIdent)
         {
             if (BuscarNivelActual(idToken.Text) != null)
-            {
                 return null;
-            }
-            VarIdent newIdent = new VarIdent(idToken, type, isArray, declCtx, this.nivelActual);
+
             tabla.Insert(0, newIdent);
             return newIdent;
         }
 
+        // Inserción de variables
+        public VarIdent InsertarVar(IToken idToken, int type, bool isArray, ParserRuleContext declCtx)
+        {
+            VarIdent newIdent = new VarIdent(idToken, type, isArray, declCtx, this.nivelActual);
+            return (VarIdent)InsertarIdent(idToken, type, declCtx, this.nivelActual, newIdent);
+        }
+
+        // Inserción de métodos
         public MethodIdent InsertarMethod(IToken idToken, int returnType, ParserRuleContext declCtx)
         {
-            if (BuscarNivelActual(idToken.Text) != null)
-            {
-                return null;
-            }
             MethodIdent newIdent = new MethodIdent(idToken, returnType, declCtx, this.nivelActual);
-            tabla.Insert(0, newIdent);
-            return newIdent;
+            return (MethodIdent)InsertarIdent(idToken, returnType, declCtx, this.nivelActual, newIdent);
         }
 
-        // --- MÉTODO MODIFICADO ---
-        public ParamIdent InsertarParam(MethodIdent method, IToken idToken, int type, bool isArray, ParserRuleContext declCtx, int methodBodyNivel, bool addToScope = true)
-        {
-            if (method.Params.Any(p => p.GetName() == idToken.Text))
-            {
-                return null;
-            }
-
-            ParamIdent newIdent = new ParamIdent(idToken, type, isArray, declCtx, methodBodyNivel);
-            method.AddParam(newIdent); // Siempre se añade a la definición del método.
-
-            // Solo se añade a la tabla de símbolos del scope actual si se indica.
-            // Esto evita que los parámetros de 'len', 'ord', 'chr' contaminen el scope global.
-            if (addToScope)
-            {
-                tabla.Insert(0, newIdent);
-            }
-            
-            return newIdent;
-        }
-
+        // Inserción de clases
         public ClassIdent InsertarClass(IToken idToken, ParserRuleContext declCtx)
         {
-            if (BuscarNivelActual(idToken.Text) != null)
-            {
-                return null;
-            }
             ClassIdent newIdent = new ClassIdent(idToken, declCtx, this.nivelActual);
-            tabla.Insert(0, newIdent);
-            return newIdent;
+            return (ClassIdent)InsertarIdent(idToken, ClassType, declCtx, this.nivelActual, newIdent);
         }
 
+        // Búsqueda en todos los scopes (más cercano primero)
         public Ident Buscar(string nombre)
         {
             foreach (Ident id in tabla)
             {
                 if (id.GetName() == nombre)
-                {
                     return id;
-                }
             }
             return null;
         }
 
+        // Búsqueda solo en el scope actual
         public Ident BuscarNivelActual(string nombre)
         {
             foreach (Ident id in tabla)
             {
-                if (id.Nivel == this.nivelActual)
-                {
-                    if (id.GetName() == nombre)
-                    {
-                        return id;
-                    }
-                }
-                else if (id.Nivel < this.nivelActual)
-                {
-                    break;
-                }
+                if (id.Nivel == this.nivelActual && id.GetName() == nombre)
+                    return id;
             }
             return null;
         }
 
+        // Conversión de código de tipo a string
         public static string TypeToString(int typeCode)
         {
             switch (typeCode)
@@ -221,6 +184,7 @@ namespace MiniCSharp
             }
         }
 
+        // Para depuración
         public void Imprimir()
         {
             Console.WriteLine($"----- INICIO TABLA (Nivel Actual: {nivelActual}) ------");
@@ -238,11 +202,30 @@ namespace MiniCSharp
                 }
                 else if (id is ClassIdent)
                 {
-                     Console.Write($" -> Miembros: (use classId.Members.Imprimir() para detalles)");
+                    Console.Write($" -> Miembros: (use classId.Members.Imprimir() para detalles)");
                 }
                 Console.WriteLine(")");
             }
             Console.WriteLine("----- FIN TABLA ------");
         }
+        
+        // Inserción de parámetros en el contexto del método
+        public ParamIdent InsertarParam(MethodIdent method, IToken idToken, int type, bool isArray, ParserRuleContext declCtx, int nivel, bool addToScope = true)
+        {
+            // Verificar que no haya parámetros duplicados en el método
+            if (method.Params.Any(p => p.GetName() == idToken.Text))
+                return null;
+
+            // Crear el nuevo identificador de parámetro
+            ParamIdent newIdent = new ParamIdent(idToken, type, isArray, declCtx, nivel);
+            method.AddParam(newIdent);  // Añadirlo a la lista de parámetros del método
+
+            // Opcionalmente agregarlo a la tabla de símbolos si se requiere (usualmente es el caso)
+            if (addToScope)
+                tabla.Insert(0, newIdent);
+
+            return newIdent;
+        }
+
     }
 }
